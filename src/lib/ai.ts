@@ -19,5 +19,5 @@ export function getAIClient(): GoogleGenerativeAI {
   return globalForGemini.gemini;
 }
 
-export const AI_MODEL = "gemini-2.0-flash";
+export const AI_MODEL = "gemini-2.5-flash-preview-05-20";
 export const MAX_TOKENS = 2048;
