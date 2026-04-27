@@ -49,6 +49,17 @@ src/
       page.tsx                  # Profile home dashboard
       ProfileHeader.tsx         # Header with avatar, name, switch button
       ProfileNav.tsx            # Bottom nav (mobile) / sidebar nav (desktop)
+  components/
+    exercises/
+      ExerciseRenderer.tsx     # Dispatcher: routes Exercise to correct component
+      ExerciseShell.tsx        # Wrapper with progress bar
+      ExerciseFeedback.tsx     # Correct/incorrect feedback with explanation
+      MultipleChoice.tsx       # 4-option question
+      FillInTheBlank.tsx       # Sentence with text input blank
+      TrueFalse.tsx            # True/False toggle buttons
+      Reorder.tsx              # Tap-to-order word arrangement
+      FreeText.tsx             # Textarea with self-check
+      index.ts                 # Barrel export
   contexts/
     ProfileContext.tsx          # ProfileProvider + useProfile hook
   generated/
@@ -110,7 +121,7 @@ tasks/
 
 - **Phase 1 (Foundation):** Complete — scaffolding, DB, profiles, deployment-ready
 - **Phase 2 (AI Exercises):** Complete — types, topics, prompts, generation endpoint, fallbacks, caching
-- **Phase 3 (Exercise UI):** Not started
+- **Phase 3 (Exercise UI):** Complete — all 5 exercise components, shell, feedback, renderer
 - **Phase 4 (Sessions):** Not started
 - **Phase 5 (Gamification):** Not started
 - **Phase 6 (Progress):** Not started
