@@ -1,0 +1,198 @@
+{
+  "project": "Marc_EN_DE",
+  "branchName": "ralph/phase1-foundation",
+  "description": "Phase 1 — Foundation & Profile System: Scaffold Next.js 15 project, set up Prisma/SQLite database, build profile system (create, select, switch), deploy to Vercel.",
+  "userStories": [
+    {
+      "id": "US-001",
+      "title": "Project scaffolding and tooling",
+      "description": "As a developer, I need a properly configured Next.js 15 project so that all subsequent work has a solid foundation.",
+      "acceptanceCriteria": [
+        "Next.js 15 (App Router) project initialized with TypeScript and Tailwind CSS",
+        "Path alias @/* → ./src/* configured in tsconfig.json",
+        "ESLint configured and passing",
+        "Vitest configured with a sample passing test",
+        "Playwright configured with a sample passing E2E test",
+        "npm run dev starts the dev server at localhost:3000",
+        "npm run build completes without errors",
+        "npm run test runs Vitest tests",
+        "npm run test:e2e runs Playwright tests",
+        "npm run lint runs ESLint",
+        ".gitignore includes node_modules, .next, .env, dev.db, playwright-report",
+        "Install dependencies: zod, date-fns, lucide-react, @anthropic-ai/sdk",
+        "iPad Safari viewport meta tag with viewport-fit=cover in root layout",
+        "Typecheck passes"
+      ],
+      "priority": 1,
+      "passes": false,
+      "notes": "Use create-next-app with --app --typescript --tailwind flags. Install Vitest with @vitejs/plugin-react and happy-dom. Install Playwright with npx playwright install."
+    },
+    {
+      "id": "US-002",
+      "title": "Database schema and Prisma setup",
+      "description": "As a developer, I need the database schema defined so that all features can persist data.",
+      "acceptanceCriteria": [
+        "Prisma installed with @prisma/client and prisma as devDep",
+        "prisma/schema.prisma uses datasource sqlite with url from env DATABASE_URL",
+        "Profile model: id (cuid), name (String), avatarId (String), createdAt, updatedAt",
+        "Session model: id (cuid), profileId (FK to Profile), language (String de/en), mode (String daily/free), startedAt (DateTime), completedAt (DateTime nullable), totalPoints (Int default 0), exerciseCount (Int default 0)",
+        "ExerciseResult model: id (cuid), sessionId (FK), profileId (FK), language (String), category (String), topic (String), exerciseType (String), question (String as JSON), userAnswer (String as JSON), correctAnswer (String as JSON), isCorrect (Boolean), pointsEarned (Int default 0), timeSpentSec (Int default 0), createdAt (DateTime)",
+        "Achievement model: id (cuid), key (String unique), nameDE (String), nameEN (String), descriptionDE (String), descriptionEN (String), iconId (String), category (String), threshold (Int)",
+        "ProfileAchievement model: id (cuid), profileId (FK), achievementId (FK), earnedAt (DateTime); unique constraint on profileId+achievmentId",
+        "Streak model: id (cuid), profileId (FK), language (String), currentStreak (Int default 0), longestStreak (Int default 0), lastPracticeDate (String); unique constraint on profileId+language",
+        "Indexes on: Session(profileId, language), Session(profileId, startedAt), ExerciseResult(profileId, language, topic), ExerciseResult(sessionId), Streak(profileId, language)",
+        "Cascade delete on Profile: deleting a profile deletes sessions, results, profileAchievements, streaks",
+        "npx prisma migrate dev runs successfully against local SQLite",
+        "Prisma client singleton at src/lib/prisma.ts (reuse in dev to avoid hot-reload connection issues)",
+        ".env file with DATABASE_URL=file:./dev.db",
+        "Typecheck passes"
+      ],
+      "priority": 2,
+      "passes": false,
+      "notes": "Use standard Prisma with SQLite for now (not Turso adapter — that's for production). Use cuid() for id generation."
+    },
+    {
+      "id": "US-003",
+      "title": "Achievement seed data",
+      "description": "As a developer, I need reference achievement data seeded so that the gamification system has badges to award.",
+      "acceptanceCriteria": [
+        "Seed script at prisma/seed-achievements.ts using Prisma client",
+        "Seeds streak badges: streak_3, streak_7, streak_14, streak_30, streak_100 with appropriate nameDE/nameEN/descriptions/iconId/category/threshold",
+        "Seeds mastery badges: grammar_star, spelling_ace, reading_pro, writing_hero",
+        "Seeds milestone badges: first_session, ten_sessions, hundred_sessions, perfect_5, both_languages, level_5",
+        "Seeds special badges: early_bird, night_owl, weekend_warrior",
+        "npm run seed:achievements runs the seed script (add to package.json scripts)",
+        "Seed is idempotent — uses upsert so running multiple times doesn't create duplicates",
+        "Typecheck passes"
+      ],
+      "priority": 3,
+      "passes": false,
+      "notes": "Use prisma.$transaction with upsert for idempotency. Configure prisma seed in package.json."
+    },
+    {
+      "id": "US-010",
+      "title": "Standardized API response helpers",
+      "description": "As a developer, I need reusable API response utilities so all endpoints return consistent formats.",
+      "acceptanceCriteria": [
+        "src/lib/api-response.ts exports successResponse(data, status?) returning NextResponse with { success: true, data }",
+        "src/lib/api-response.ts exports errorResponse(code, message, status?) returning NextResponse with { success: false, error: { code, message } }",
+        "Error code constants exported: INVALID_INPUT, NOT_FOUND, FORBIDDEN, CONFLICT, SERVER_ERROR",
+        "Helper validateBody<T>(request, zodSchema) that parses JSON body against schema, returns parsed data or calls errorResponse with INVALID_INPUT",
+        "Unit test: successResponse produces correct shape",
+        "Unit test: errorResponse produces correct shape",
+        "Unit test: validateBody returns parsed data for valid input, returns error response for invalid",
+        "Typecheck passes"
+      ],
+      "priority": 4,
+      "passes": false,
+      "notes": "This is moved ahead of US-006 because the profile API routes depend on these helpers."
+    },
+    {
+      "id": "US-006",
+      "title": "Profile API routes",
+      "description": "As a developer, I need CRUD API routes for profiles so the frontend can manage them.",
+      "acceptanceCriteria": [
+        "GET /api/profiles returns all profiles as { success: true, data: profiles[] } with id, name, avatarId",
+        "POST /api/profiles creates profile with body { name, avatarId }, validates with Zod (name: 2-30 chars, required; avatarId: required string), returns created profile",
+        "GET /api/profiles/[id] returns single profile or 404",
+        "PATCH /api/profiles/[id] updates name and/or avatarId with Zod validation",
+        "DELETE /api/profiles/[id] deletes profile and all associated data (cascade)",
+        "All routes use successResponse/errorResponse helpers from api-response.ts",
+        "Integration test: full CRUD cycle — create, read single, read all, update, delete, verify deleted",
+        "Typecheck passes"
+      ],
+      "priority": 5,
+      "passes": false,
+      "notes": "Use Next.js App Router route handlers (route.ts files). Use the validateBody helper from US-010."
+    },
+    {
+      "id": "US-004",
+      "title": "Profile creation page",
+      "description": "As a student, I want to create my profile with a name and fun avatar so the app knows who I am.",
+      "acceptanceCriteria": [
+        "Page at /profiles/new with a name input field and avatar selector",
+        "Avatar selector shows 8-10 animal options (fox, owl, dragon, cat, dog, bear, rabbit, unicorn, panda, tiger) as colorful icons using lucide-react or emoji fallback",
+        "Name field validates: required, 2-30 characters, shows inline error",
+        "Submit button creates profile via POST /api/profiles",
+        "After creation, redirects to /[profileId] using router.push",
+        "Responsive: works on iPad portrait (768px) and desktop",
+        "Large tap targets (min 48px) for avatar selection on touch devices",
+        "Typecheck passes",
+        "Verify in browser using dev-browser skill"
+      ],
+      "priority": 6,
+      "passes": false,
+      "notes": "Use client component with useState for form state. Use fetch to call the API."
+    },
+    {
+      "id": "US-005",
+      "title": "Profile picker (home screen)",
+      "description": "As a student, I want to see a 'Who is practicing?' screen when I open the app so I can select my profile.",
+      "acceptanceCriteria": [
+        "Root page / shows 'Who is practicing?' heading",
+        "Fetches and displays all existing profiles as cards (avatar + name)",
+        "Tapping a profile card navigates to /[profileId]",
+        "Add new profile button/card navigates to /profiles/new",
+        "If no profiles exist, shows only the 'Create your first profile' prompt with link to /profiles/new",
+        "Responsive: 2-column grid on iPad, 3-column on desktop, 1-column on phone",
+        "Loading state while profiles are fetched",
+        "Typecheck passes",
+        "Verify in browser using dev-browser skill"
+      ],
+      "priority": 7,
+      "passes": false,
+      "notes": "Can use server component with async data fetching from Prisma directly, or client component with fetch."
+    },
+    {
+      "id": "US-007",
+      "title": "Profile-scoped layout with navigation",
+      "description": "As a student, I want to see my name and avatar in the app header so I know I'm in my profile, and navigate between sections.",
+      "acceptanceCriteria": [
+        "Layout at /[profileId]/layout.tsx wraps all profile-scoped pages",
+        "Header shows profile avatar (small) + name on the left, points/level placeholder on the right",
+        "Bottom navigation bar with icons for: Home, Practice, Progress, Badges",
+        "Switch profile link/button returns to /",
+        "ProfileProvider React context at src/contexts/ProfileContext.tsx provides current profile data to child components",
+        "Responsive: bottom nav on mobile/iPad (<1024px), sidebar on desktop (>=1024px)",
+        "Typecheck passes",
+        "Verify in browser using dev-browser skill"
+      ],
+      "priority": 8,
+      "passes": false,
+      "notes": "Fetch profile data in layout server component, pass to client ProfileProvider. Use lucide-react icons for nav."
+    },
+    {
+      "id": "US-008",
+      "title": "Profile home dashboard (placeholder)",
+      "description": "As a student, I want a home page after selecting my profile that shows where to start practicing.",
+      "acceptanceCriteria": [
+        "Page at /[profileId]/page.tsx is the profile home dashboard",
+        "Shows welcome message 'Hallo, [name]!' with the profile avatar",
+        "Two large CTA buttons: 'Daily Practice' and 'Free Practice' (link to placeholder pages or # for now)",
+        "Placeholder sections for streak display, level/points, recent activity showing 'Coming soon'",
+        "Responsive layout — cards stack on mobile, side-by-side on desktop",
+        "Typecheck passes",
+        "Verify in browser using dev-browser skill"
+      ],
+      "priority": 9,
+      "passes": false,
+      "notes": "Use the ProfileProvider context to get the current profile name and avatar."
+    },
+    {
+      "id": "US-009",
+      "title": "GitHub repo setup and initial commit",
+      "description": "As a developer, I need the code pushed to GitHub so it is version-controlled and ready for Vercel deployment.",
+      "acceptanceCriteria": [
+        "Git initialized with git init",
+        "All project files committed with descriptive initial commit message",
+        "Remote added: git remote add origin git@github.com:darkbloomy/Marc-EN-DE.git",
+        "Code pushed to main branch",
+        "CLAUDE.md updated with project commands and architecture overview",
+        "Typecheck passes"
+      ],
+      "priority": 10,
+      "passes": false,
+      "notes": "Vercel deployment is a manual step done by the developer after push. This story just handles git setup and push."
+    }
+  ]
+}

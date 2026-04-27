@@ -1,0 +1,101 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "sqlite"
+}
+
+model Profile {
+  id        String   @id @default(cuid())
+  name      String
+  avatarId  String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  sessions            Session[]
+  exerciseResults     ExerciseResult[]
+  profileAchievements ProfileAchievement[]
+  streaks             Streak[]
+}
+
+model Session {
+  id            String    @id @default(cuid())
+  profileId     String
+  language      String // "de" or "en"
+  mode          String // "daily" or "free"
+  startedAt     DateTime  @default(now())
+  completedAt   DateTime?
+  totalPoints   Int       @default(0)
+  exerciseCount Int       @default(0)
+
+  profile         Profile          @relation(fields: [profileId], references: [id], onDelete: Cascade)
+  exerciseResults ExerciseResult[]
+
+  @@index([profileId, language])
+  @@index([profileId, startedAt])
+}
+
+model ExerciseResult {
+  id            String   @id @default(cuid())
+  sessionId     String
+  profileId     String
+  language      String
+  category      String
+  topic         String
+  exerciseType  String
+  question      String // JSON string
+  userAnswer    String // JSON string
+  correctAnswer String // JSON string
+  isCorrect     Boolean
+  pointsEarned  Int      @default(0)
+  timeSpentSec  Int      @default(0)
+  createdAt     DateTime @default(now())
+
+  session Session @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  profile Profile @relation(fields: [profileId], references: [id], onDelete: Cascade)
+
+  @@index([profileId, language, topic])
+  @@index([sessionId])
+}
+
+model Achievement {
+  id           String @id @default(cuid())
+  key          String @unique
+  nameDE       String
+  nameEN       String
+  descriptionDE String
+  descriptionEN String
+  iconId       String
+  category     String
+  threshold    Int
+
+  profileAchievements ProfileAchievement[]
+}
+
+model ProfileAchievement {
+  id            String   @id @default(cuid())
+  profileId     String
+  achievementId String
+  earnedAt      DateTime @default(now())
+
+  profile     Profile     @relation(fields: [profileId], references: [id], onDelete: Cascade)
+  achievement Achievement @relation(fields: [achievementId], references: [id], onDelete: Cascade)
+
+  @@unique([profileId, achievementId])
+}
+
+model Streak {
+  id               String @id @default(cuid())
+  profileId        String
+  language         String
+  currentStreak    Int    @default(0)
+  longestStreak    Int    @default(0)
+  lastPracticeDate String // ISO date string
+
+  profile Profile @relation(fields: [profileId], references: [id], onDelete: Cascade)
+
+  @@unique([profileId, language])
+  @@index([profileId, language])
+}

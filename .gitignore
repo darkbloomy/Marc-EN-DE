@@ -39,3 +39,13 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# database
+dev.db
+dev.db-journal
+
+# playwright
+/playwright-report/
+/test-results/
+
+/src/generated/prisma
