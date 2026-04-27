@@ -1,23 +1,23 @@
-import Anthropic from "@anthropic-ai/sdk";
+import { GoogleGenerativeAI } from "@google/generative-ai";
 
-const globalForAnthropic = globalThis as unknown as {
-  anthropic: Anthropic | undefined;
+const globalForGemini = globalThis as unknown as {
+  gemini: GoogleGenerativeAI | undefined;
 };
 
-function createClient(): Anthropic {
-  const apiKey = process.env.ANTHROPIC_API_KEY;
+function createClient(): GoogleGenerativeAI {
+  const apiKey = process.env.GEMINI_API_KEY;
   if (!apiKey) {
-    throw new Error("ANTHROPIC_API_KEY environment variable is not set");
+    throw new Error("GEMINI_API_KEY environment variable is not set");
   }
-  return new Anthropic({ apiKey });
+  return new GoogleGenerativeAI(apiKey);
 }
 
-export function getAnthropicClient(): Anthropic {
-  if (!globalForAnthropic.anthropic) {
-    globalForAnthropic.anthropic = createClient();
+export function getAIClient(): GoogleGenerativeAI {
+  if (!globalForGemini.gemini) {
+    globalForGemini.gemini = createClient();
   }
-  return globalForAnthropic.anthropic;
+  return globalForGemini.gemini;
 }
 
-export const AI_MODEL = "claude-sonnet-4-20250514";
+export const AI_MODEL = "gemini-2.0-flash";
 export const MAX_TOKENS = 2048;

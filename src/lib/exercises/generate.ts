@@ -1,4 +1,4 @@
-import { getAnthropicClient, AI_MODEL, MAX_TOKENS } from "@/lib/ai";
+import { getAIClient, AI_MODEL, MAX_TOKENS } from "@/lib/ai";
 import type {
   Exercise,
   ExerciseType,
@@ -70,19 +70,22 @@ async function generateFromAI(
 ): Promise<ExerciseBatch> {
   const prompt = buildGenerationPrompt(topic, exerciseType, count);
 
-  const response = await getAnthropicClient().messages.create({
+  const model = getAIClient().getGenerativeModel({
     model: AI_MODEL,
-    max_tokens: MAX_TOKENS,
-    system: SYSTEM_PROMPT,
-    messages: [{ role: "user", content: prompt }],
+    systemInstruction: SYSTEM_PROMPT,
+    generationConfig: {
+      maxOutputTokens: MAX_TOKENS,
+      responseMimeType: "application/json",
+    },
   });
 
-  const textBlock = response.content.find((block) => block.type === "text");
-  if (!textBlock || textBlock.type !== "text") {
+  const result = await model.generateContent(prompt);
+  const text = result.response.text();
+  if (!text) {
     throw new Error("No text response from AI");
   }
 
-  const exercises = parseExerciseResponse(textBlock.text, count);
+  const exercises = parseExerciseResponse(text, count);
 
   const generatedExercises: GeneratedExercise[] = exercises.map(
     (exercise) => ({
