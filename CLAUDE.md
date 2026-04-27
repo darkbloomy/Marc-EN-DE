@@ -40,6 +40,8 @@ src/
       profiles/
         route.ts                # GET (list), POST (create)
         [id]/route.ts           # GET, PATCH, DELETE single profile
+      exercises/
+        generate/route.ts       # POST — AI exercise generation
     profiles/
       new/page.tsx              # Profile creation form
     [profileId]/
@@ -52,8 +54,17 @@ src/
   generated/
     prisma/                    # Generated Prisma client (do not edit)
   lib/
+    ai.ts                      # Anthropic SDK client (lazy singleton)
     api-response.ts            # successResponse, errorResponse, validateBody
     avatars.ts                 # Avatar options (emoji-based)
+    exercises/
+      types.ts                 # Exercise type definitions (MC, FillBlank, T/F, Reorder, FreeText)
+      topics.ts                # Topic registry for DE and EN (22 topics)
+      prompts.ts               # System prompt + per-type generation prompts
+      generate.ts              # AI generation logic with fallback
+      fallbacks.ts             # Hardcoded fallback exercises per type/language
+      cache.ts                 # In-memory cache (10min TTL)
+      index.ts                 # Barrel export
     prisma.ts                  # Prisma client singleton
     validations.ts             # Zod schemas for profile CRUD
   test/
@@ -77,6 +88,10 @@ tasks/
 - **Profile scoping:** Profile pages live under `/[profileId]/...`, layout fetches profile from DB
 - **Avatars:** Emoji-based, defined in `@/lib/avatars` — 10 animal options
 - **No auth:** Profiles are identified by URL path (CUID), no login/passwords
+- **AI client:** Use `getAnthropicClient()` from `@/lib/ai` (lazy init, avoids test failures)
+- **Exercise generation:** `generateExercises({ topicId, exerciseType, count })` — tries AI first, falls back to hardcoded exercises
+- **Exercise types:** `multiple_choice`, `fill_in_the_blank`, `true_false`, `reorder`, `free_text`
+- **Topics:** 12 German + 10 English topics, accessed via `getTopic(id)`, `getTopicsByLanguage(lang)`
 
 ## Database
 
@@ -94,7 +109,7 @@ tasks/
 ## Phase Status
 
 - **Phase 1 (Foundation):** Complete — scaffolding, DB, profiles, deployment-ready
-- **Phase 2 (AI Exercises):** Not started
+- **Phase 2 (AI Exercises):** Complete — types, topics, prompts, generation endpoint, fallbacks, caching
 - **Phase 3 (Exercise UI):** Not started
 - **Phase 4 (Sessions):** Not started
 - **Phase 5 (Gamification):** Not started
