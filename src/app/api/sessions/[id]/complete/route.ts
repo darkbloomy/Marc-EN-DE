@@ -8,6 +8,11 @@ import {
   ErrorCode,
 } from "@/lib/api-response";
 import { NextRequest } from "next/server";
+import { updateStreak } from "@/lib/gamification/streaks";
+import {
+  checkAndAwardAchievements,
+  awardTimeBasedAchievements,
+} from "@/lib/gamification/achievements";
 
 const completeSessionSchema = z.object({
   totalPoints: z.number().int().min(0),
@@ -40,7 +45,19 @@ export async function POST(
       },
     });
 
-    return successResponse(updated);
+    // Update streak and check achievements (fire-and-forget style, don't block response)
+    const streakInfo = await updateStreak(session.profileId, session.language);
+    const newAchievements = await checkAndAwardAchievements(session.profileId);
+    const timeAchievements = await awardTimeBasedAchievements(
+      session.profileId,
+      new Date().getHours()
+    );
+
+    return successResponse({
+      ...updated,
+      streak: streakInfo,
+      newAchievements: [...newAchievements, ...timeAchievements],
+    });
   } catch {
     return errorResponse(
       ErrorCode.SERVER_ERROR,

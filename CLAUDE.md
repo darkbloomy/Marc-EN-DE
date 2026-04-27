@@ -39,7 +39,11 @@ src/
     api/
       profiles/
         route.ts                # GET (list), POST (create)
-        [id]/route.ts           # GET, PATCH, DELETE single profile
+        [id]/
+          route.ts              # GET, PATCH, DELETE single profile
+          gamification/route.ts # GET level, streaks, achievements
+      achievements/
+        route.ts                # GET list all achievements
       exercises/
         generate/route.ts       # POST — AI exercise generation
       sessions/
@@ -58,6 +62,7 @@ src/
       practice/
         daily/page.tsx          # Daily practice flow (language pick → exercises → summary)
         free/page.tsx           # Free practice (language → topic → exercises → summary)
+      badges/page.tsx           # All achievements grid (earned/locked)
   components/
     SessionSummary.tsx         # Session completion screen (stats, per-exercise breakdown)
     exercises/
@@ -86,6 +91,10 @@ src/
       fallbacks.ts             # Hardcoded fallback exercises per type/language
       cache.ts                 # In-memory cache (10min TTL)
       index.ts                 # Barrel export
+    gamification/
+      levels.ts                # Level calculation (exponential curve, 50 levels)
+      streaks.ts               # Streak tracking (update on session complete)
+      achievements.ts          # Achievement checking and awarding
     sessions/
       daily-builder.ts         # Daily session builder (picks topics, mixes exercise types)
     prisma.ts                  # Prisma client singleton
@@ -118,6 +127,9 @@ tasks/
 - **Session flow:** Create session → generate exercises → render exercises → save results → complete session → show summary
 - **Daily builder:** Picks 3 random topics, generates 6 exercises with mixed types
 - **Free practice:** User picks language → topic → 5 exercises generated for that topic
+- **Level system:** `calculateLevel(totalPoints)` from `@/lib/gamification/levels` — exponential curve, 50 levels max
+- **Streaks:** Updated automatically on session completion via `updateStreak()` — tracks per-language streaks
+- **Achievements:** Checked automatically on session completion via `checkAndAwardAchievements()` — 18 achievements across streak, mastery, milestone, and special categories
 
 ## Database
 
@@ -138,6 +150,6 @@ tasks/
 - **Phase 2 (AI Exercises):** Complete — types, topics, prompts, generation endpoint, fallbacks, caching
 - **Phase 3 (Exercise UI):** Complete — all 5 exercise components, shell, feedback, renderer
 - **Phase 4 (Sessions):** Complete — session API, daily builder, daily/free practice flows, session summary
-- **Phase 5 (Gamification):** Not started
+- **Phase 5 (Gamification):** Complete — levels, streaks, achievements, gamification API, badges page, dashboard integration
 - **Phase 6 (Progress):** Not started
 - **Phase 7 (Polish):** Not started
