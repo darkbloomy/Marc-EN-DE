@@ -2,8 +2,11 @@ import { PrismaClient } from "../src/generated/prisma/client";
 import { PrismaLibSql } from "@prisma/adapter-libsql";
 import "dotenv/config";
 
+const url = process.env.DATABASE_URL ?? "file:./prisma/dev.db";
+const authToken = process.env.DATABASE_AUTH_TOKEN;
 const adapter = new PrismaLibSql({
-  url: process.env.DATABASE_URL ?? "file:./prisma/dev.db",
+  url,
+  ...(authToken ? { authToken } : {}),
 });
 const prisma = new PrismaClient({ adapter });
 
