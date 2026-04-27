@@ -42,14 +42,24 @@ src/
         [id]/route.ts           # GET, PATCH, DELETE single profile
       exercises/
         generate/route.ts       # POST — AI exercise generation
+      sessions/
+        route.ts                # POST create session
+        [id]/
+          route.ts              # GET session with results
+          complete/route.ts     # POST complete session
+          results/route.ts      # POST save exercise result
     profiles/
       new/page.tsx              # Profile creation form
     [profileId]/
       layout.tsx                # Profile-scoped layout (header + nav)
-      page.tsx                  # Profile home dashboard
+      page.tsx                  # Profile home dashboard (links to practice)
       ProfileHeader.tsx         # Header with avatar, name, switch button
       ProfileNav.tsx            # Bottom nav (mobile) / sidebar nav (desktop)
+      practice/
+        daily/page.tsx          # Daily practice flow (language pick → exercises → summary)
+        free/page.tsx           # Free practice (language → topic → exercises → summary)
   components/
+    SessionSummary.tsx         # Session completion screen (stats, per-exercise breakdown)
     exercises/
       ExerciseRenderer.tsx     # Dispatcher: routes Exercise to correct component
       ExerciseShell.tsx        # Wrapper with progress bar
@@ -76,6 +86,8 @@ src/
       fallbacks.ts             # Hardcoded fallback exercises per type/language
       cache.ts                 # In-memory cache (10min TTL)
       index.ts                 # Barrel export
+    sessions/
+      daily-builder.ts         # Daily session builder (picks topics, mixes exercise types)
     prisma.ts                  # Prisma client singleton
     validations.ts             # Zod schemas for profile CRUD
   test/
@@ -103,6 +115,9 @@ tasks/
 - **Exercise generation:** `generateExercises({ topicId, exerciseType, count })` — tries AI first, falls back to hardcoded exercises
 - **Exercise types:** `multiple_choice`, `fill_in_the_blank`, `true_false`, `reorder`, `free_text`
 - **Topics:** 12 German + 10 English topics, accessed via `getTopic(id)`, `getTopicsByLanguage(lang)`
+- **Session flow:** Create session → generate exercises → render exercises → save results → complete session → show summary
+- **Daily builder:** Picks 3 random topics, generates 6 exercises with mixed types
+- **Free practice:** User picks language → topic → 5 exercises generated for that topic
 
 ## Database
 
@@ -122,7 +137,7 @@ tasks/
 - **Phase 1 (Foundation):** Complete — scaffolding, DB, profiles, deployment-ready
 - **Phase 2 (AI Exercises):** Complete — types, topics, prompts, generation endpoint, fallbacks, caching
 - **Phase 3 (Exercise UI):** Complete — all 5 exercise components, shell, feedback, renderer
-- **Phase 4 (Sessions):** Not started
+- **Phase 4 (Sessions):** Complete — session API, daily builder, daily/free practice flows, session summary
 - **Phase 5 (Gamification):** Not started
 - **Phase 6 (Progress):** Not started
 - **Phase 7 (Polish):** Not started

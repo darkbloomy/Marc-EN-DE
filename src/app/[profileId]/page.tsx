@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useProfile } from "@/contexts/ProfileContext";
 import { getAvatar } from "@/lib/avatars";
 import { BookOpen, Shuffle, Flame, Trophy, Clock } from "lucide-react";
@@ -23,7 +24,10 @@ export default function ProfileDashboard() {
 
       {/* CTA Buttons */}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-        <button className="flex items-center gap-4 p-6 bg-blue-600 text-white rounded-2xl hover:bg-blue-700 transition-colors text-left">
+        <Link
+          href={`/${profile.id}/practice/daily`}
+          className="flex items-center gap-4 p-6 bg-blue-600 text-white rounded-2xl hover:bg-blue-700 transition-colors text-left"
+        >
           <BookOpen size={32} />
           <div>
             <div className="text-lg font-bold">Daily Practice</div>
@@ -31,9 +35,12 @@ export default function ProfileDashboard() {
               10-15 min guided session
             </div>
           </div>
-        </button>
+        </Link>
 
-        <button className="flex items-center gap-4 p-6 bg-emerald-600 text-white rounded-2xl hover:bg-emerald-700 transition-colors text-left">
+        <Link
+          href={`/${profile.id}/practice/free`}
+          className="flex items-center gap-4 p-6 bg-emerald-600 text-white rounded-2xl hover:bg-emerald-700 transition-colors text-left"
+        >
           <Shuffle size={32} />
           <div>
             <div className="text-lg font-bold">Free Practice</div>
@@ -41,7 +48,7 @@ export default function ProfileDashboard() {
               Choose your own topic
             </div>
           </div>
-        </button>
+        </Link>
       </div>
 
       {/* Placeholder sections */}
