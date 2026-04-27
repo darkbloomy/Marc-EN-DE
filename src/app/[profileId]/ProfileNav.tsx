@@ -7,7 +7,7 @@ import { Home, BookOpen, BarChart3, Award } from "lucide-react";
 
 const NAV_ITEMS = [
   { label: "Home", icon: Home, path: "" },
-  { label: "Practice", icon: BookOpen, path: "/practice" },
+  { label: "Practice", icon: BookOpen, path: "/practice/daily" },
   { label: "Progress", icon: BarChart3, path: "/progress" },
   { label: "Badges", icon: Award, path: "/badges" },
 ];
@@ -26,7 +26,7 @@ export function ProfileNav({
     <nav
       className={
         isHorizontal
-          ? "flex items-center justify-around bg-white border-t border-gray-200 py-2 px-4"
+          ? "flex items-center justify-around bg-white border-t border-gray-200 py-2 px-4 safe-bottom"
           : "flex flex-col gap-1 p-4 flex-1"
       }
     >
