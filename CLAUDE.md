@@ -42,6 +42,7 @@ src/
         [id]/
           route.ts              # GET, PATCH, DELETE single profile
           gamification/route.ts # GET level, streaks, achievements
+          progress/route.ts     # GET progress stats, activity, accuracy
       achievements/
         route.ts                # GET list all achievements
       exercises/
@@ -56,13 +57,14 @@ src/
       new/page.tsx              # Profile creation form
     [profileId]/
       layout.tsx                # Profile-scoped layout (header + nav)
-      page.tsx                  # Profile home dashboard (links to practice)
+      page.tsx                  # Dashboard (live stats, recent sessions, achievements)
       ProfileHeader.tsx         # Header with avatar, name, switch button
       ProfileNav.tsx            # Bottom nav (mobile) / sidebar nav (desktop)
       practice/
         daily/page.tsx          # Daily practice flow (language pick → exercises → summary)
         free/page.tsx           # Free practice (language → topic → exercises → summary)
       badges/page.tsx           # All achievements grid (earned/locked)
+      progress/page.tsx         # Progress page (heatmap, accuracy, sessions, topics)
   components/
     SessionSummary.tsx         # Session completion screen (stats, per-exercise breakdown)
     exercises/
@@ -151,5 +153,5 @@ tasks/
 - **Phase 3 (Exercise UI):** Complete — all 5 exercise components, shell, feedback, renderer
 - **Phase 4 (Sessions):** Complete — session API, daily builder, daily/free practice flows, session summary
 - **Phase 5 (Gamification):** Complete — levels, streaks, achievements, gamification API, badges page, dashboard integration
-- **Phase 6 (Progress):** Not started
+- **Phase 6 (Progress):** Complete — progress API, progress page (heatmap, accuracy, topics), dashboard with live data
 - **Phase 7 (Polish):** Not started
