@@ -4,12 +4,10 @@ import type {
   ExerciseType,
   ExerciseBatch,
   GeneratedExercise,
-  Language,
 } from "./types";
 import { getTopic, type Topic } from "./topics";
 import { SYSTEM_PROMPT, buildGenerationPrompt } from "./prompts";
 import { getFallbackExercises } from "./fallbacks";
-import { getCached, setCache } from "./cache";
 
 function parseExerciseResponse(
   text: string,
@@ -38,25 +36,17 @@ export async function generateExercises(options: {
   topicId: string;
   exerciseType: ExerciseType;
   count?: number;
+  difficulty?: number;
 }): Promise<ExerciseBatch> {
-  const { topicId, exerciseType, count = 3 } = options;
+  const { topicId, exerciseType, count = 3, difficulty } = options;
 
   const topic = getTopic(topicId);
   if (!topic) {
     throw new Error(`Unknown topic: ${topicId}`);
   }
 
-  // Check cache first
-  const cacheKey = `${topicId}:${exerciseType}:${count}`;
-  const cached = getCached(cacheKey);
-  if (cached) {
-    return cached;
-  }
-
   try {
-    const batch = await generateFromAI(topic, exerciseType, count);
-    setCache(cacheKey, batch);
-    return batch;
+    return await generateFromAI(topic, exerciseType, count, difficulty);
   } catch (error) {
     console.error("AI generation failed, using fallbacks:", error);
     return getFallbackBatch(topic, exerciseType, count);
@@ -66,9 +56,10 @@ export async function generateExercises(options: {
 async function generateFromAI(
   topic: Topic,
   exerciseType: ExerciseType,
-  count: number
+  count: number,
+  difficulty?: number
 ): Promise<ExerciseBatch> {
-  const prompt = buildGenerationPrompt(topic, exerciseType, count);
+  const prompt = buildGenerationPrompt(topic, exerciseType, count, difficulty);
 
   const model = getAIClient().getGenerativeModel({
     model: AI_MODEL,
@@ -76,6 +67,7 @@ async function generateFromAI(
     generationConfig: {
       maxOutputTokens: MAX_TOKENS,
       responseMimeType: "application/json",
+      temperature: 0.9,
     },
   });
 

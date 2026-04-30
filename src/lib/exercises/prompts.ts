@@ -1,4 +1,4 @@
-import type { ExerciseType, Language } from "./types";
+import type { ExerciseType } from "./types";
 import type { Topic } from "./topics";
 
 export const SYSTEM_PROMPT = `You are a friendly language tutor for a 10-year-old German Gymnasium student in 5th grade (5. Klasse).
@@ -92,18 +92,38 @@ Rules:
   }
 }
 
+function difficultyGuidance(level: number): string {
+  switch (level) {
+    case 1:
+      return `Difficulty 1/5 (very easy — short simple sentences, the most common everyday vocabulary, gentle concepts; this student needs reinforcement of fundamentals).`;
+    case 2:
+      return `Difficulty 2/5 (easy — short sentences, common vocabulary, basic concepts; build the student's confidence).`;
+    case 3:
+      return `Difficulty 3/5 (standard 5. Klasse Gymnasium level — moderate sentence length, age-appropriate vocabulary, typical school-level concepts).`;
+    case 4:
+      return `Difficulty 4/5 (challenging — longer sentences, less common vocabulary, distractors that require careful reading; this student is doing well and is ready to be stretched).`;
+    case 5:
+      return `Difficulty 5/5 (very challenging — complex sentence structures, advanced vocabulary at the upper edge of 5. Klasse / early 6. Klasse, subtle distractors, edge-case grammar; this student has strong mastery and wants to be pushed).`;
+    default:
+      return `Difficulty 3/5 (standard 5. Klasse Gymnasium level).`;
+  }
+}
+
 export function buildGenerationPrompt(
   topic: Topic,
   exerciseType: ExerciseType,
-  count: number
+  count: number,
+  difficultyOverride?: number
 ): string {
   const langLabel = topic.language === "de" ? "German" : "English";
   const typeInstructions = exerciseTypeInstructions(exerciseType);
+  const effectiveDifficulty = difficultyOverride ?? topic.difficulty;
+  const variationNonce = Math.random().toString(36).slice(2, 8);
 
   return `Generate ${count} ${langLabel} exercise(s) for the topic: "${topic.labelEN}"
 
 Topic description: ${topic.description}
-Difficulty level: ${topic.difficulty}/5
+${difficultyGuidance(effectiveDifficulty)}
 Target student: 10-year-old German Gymnasium 5. Klasse student
 
 ${typeInstructions}
@@ -111,7 +131,8 @@ ${typeInstructions}
 ${
   count > 1
     ? `Return a JSON array of ${count} exercises, each following the structure above.
-Example: [{ "type": "...", ... }, { "type": "...", ... }]`
+Example: [{ "type": "...", ... }, { "type": "...", ... }]
+Make each of the ${count} exercises distinctly different from one another — different vocabulary, different sentence patterns, different examples. Do not repeat the same question or near-duplicates.`
     : "Return a single JSON object (not an array) following the structure above."
 }
 
@@ -120,6 +141,8 @@ ${
     ? "The exercise content should be in English, but remember the student is a German native speaker learning English."
     : "The exercise content should be in German."
 }
+
+Variation seed: ${variationNonce} (use this to ensure your exercises differ from previous batches — pick fresh examples, not the obvious first ones that come to mind).
 
 Important: Return ONLY valid JSON. No markdown formatting, no code blocks, no explanatory text.`;
 }

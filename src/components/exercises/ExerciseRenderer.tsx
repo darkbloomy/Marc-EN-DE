@@ -77,6 +77,7 @@ export function ExerciseRenderer({
       totalCount={exercises.length}
     >
       <ExerciseContent
+        key={currentIndex}
         exercise={current.exercise}
         onAnswer={handleAnswer}
         disabled={currentResult !== null}

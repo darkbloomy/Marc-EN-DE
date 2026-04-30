@@ -42,20 +42,20 @@ export default function DailyPracticePage() {
       if (!sessionRes.ok) throw new Error(sessionData.error ?? "Failed to create session");
       setSessionId(sessionData.data.id);
 
-      // Generate exercises
-      const genRes = await fetch("/api/exercises/generate", {
+      // Build the daily session (mixed topics, mixed types, adaptive difficulty)
+      const buildRes = await fetch("/api/sessions/build", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          topicId: `${language}_vocabulary_${language === "de" ? "school" : "everyday"}`,
-          exerciseType: "multiple_choice",
-          count: 6,
+          profileId: profile.id,
+          language,
+          mode: "daily",
         }),
       });
-      const genData = await genRes.json();
-      if (!genRes.ok) throw new Error(genData.error ?? "Failed to generate exercises");
+      const buildData = await buildRes.json();
+      if (!buildRes.ok) throw new Error(buildData.error ?? "Failed to build session");
 
-      setExercises(genData.data.exercises);
+      setExercises(buildData.data.exercises);
       setStage("practicing");
     } catch (err) {
       setError(err instanceof Error ? err.message : "Something went wrong");
