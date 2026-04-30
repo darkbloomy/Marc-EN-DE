@@ -99,3 +99,20 @@ model Streak {
   @@unique([profileId, language])
   @@index([profileId, language])
 }
+
+model Exercise {
+  id           String   @id @default(cuid())
+  language     String
+  topic        String
+  category     String
+  exerciseType String
+  difficulty   Int
+  payload      String
+  reviewStatus String   @default("approved")
+  batchId      String
+  modelVersion String
+  createdAt    DateTime @default(now())
+
+  @@index([language, topic, exerciseType, difficulty, reviewStatus])
+  @@index([batchId])
+}

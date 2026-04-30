@@ -74,7 +74,7 @@ export interface ExerciseBatch {
   language: Language;
   topic: string;
   generatedAt: string; // ISO timestamp
-  source: "ai" | "fallback";
+  source: "ai" | "fallback" | "db";
 }
 
 export const EXERCISE_TYPES: ExerciseType[] = [

@@ -21,7 +21,9 @@ npm run lint         # Run ESLint
 npm run test         # Run Vitest unit/integration tests
 npm run test:watch   # Run Vitest in watch mode
 npm run test:e2e     # Run Playwright E2E tests
-npm run seed:achievements  # Seed achievement data (idempotent)
+npm run seed:achievements        # Seed achievement data (idempotent)
+npm run seed:exercises           # Generate exercise pool via AI → JSON files (local only, throttled)
+npm run seed:load:exercises      # Load prisma/exercise-data/*.json into DB (idempotent)
 
 # Prisma
 npx prisma migrate dev     # Run migrations (dev)
@@ -82,15 +84,15 @@ src/
   generated/
     prisma/                    # Generated Prisma client (do not edit)
   lib/
-    ai.ts                      # Anthropic SDK client (lazy singleton)
+    ai.ts                      # Gemini client (used only by seed-exercises script)
     api-response.ts            # successResponse, errorResponse, validateBody
     avatars.ts                 # Avatar options (emoji-based)
     exercises/
       types.ts                 # Exercise type definitions (MC, FillBlank, T/F, Reorder, FreeText)
       topics.ts                # Topic registry for DE and EN (22 topics)
       prompts.ts               # System prompt + per-type generation prompts
-      generate.ts              # AI generation logic with fallback
-      fallbacks.ts             # Hardcoded fallback exercises per type/language
+      generate.ts              # DB query (Exercise pool) with difficulty widening + fallback
+      fallbacks.ts             # Hardcoded last-resort exercises per type/language
       cache.ts                 # In-memory cache (10min TTL)
       index.ts                 # Barrel export
     gamification/
@@ -107,10 +109,16 @@ e2e/                           # Playwright E2E tests
 prisma/
   schema.prisma                # Database schema
   seed-achievements.ts         # Achievement seed script
+  seed-exercises.ts            # Exercise pool generator (AI → JSON, local only)
+  seed-exercises-load.ts       # Exercise pool loader (JSON → DB, idempotent)
+  exercise-data/               # Committed exercise pool: de.json, en.json
   migrations/                  # Prisma migrations
 tasks/
   prd-phase1-foundation.md     # Phase 1 PRD
+  prd-phase8-exercise-pool.md  # Phase 8 PRD (pre-seeded exercise pool)
   prd.json                     # Ralph agent task file
+docs/
+  exercise-pool.md             # Refresh, deploy, and rollback workflow for the pool
 ```
 
 ## Key Patterns
@@ -122,8 +130,9 @@ tasks/
 - **Profile scoping:** Profile pages live under `/[profileId]/...`, layout fetches profile from DB
 - **Avatars:** Emoji-based, defined in `@/lib/avatars` — 10 animal options
 - **No auth:** Profiles are identified by URL path (CUID), no login/passwords
-- **AI client:** Use `getAnthropicClient()` from `@/lib/ai` (lazy init, avoids test failures)
-- **Exercise generation:** `generateExercises({ topicId, exerciseType, count })` — tries AI first, falls back to hardcoded exercises
+- **AI client:** `getAIClient()` from `@/lib/ai` is the Gemini client; only used by the `seed-exercises` script, not at runtime
+- **Exercise generation:** `generateExercises({ topicId, exerciseType, count, difficulty })` queries the `Exercise` DB pool with difficulty widening; falls through to hardcoded `fallbacks.ts` only as a last resort
+- **Exercise pool:** Pre-generated content lives in the `Exercise` table, seeded from `prisma/exercise-data/*.json`. Each row has `reviewStatus` ("approved"/"draft"/"rejected"), `batchId` (for rollback), and `modelVersion` (provenance)
 - **Exercise types:** `multiple_choice`, `fill_in_the_blank`, `true_false`, `reorder`, `free_text`
 - **Topics:** 12 German + 10 English topics, accessed via `getTopic(id)`, `getTopicsByLanguage(lang)`
 - **Session flow:** Create session → generate exercises → render exercises → save results → complete session → show summary
@@ -137,7 +146,7 @@ tasks/
 
 - **Dev:** SQLite via `file:./dev.db` (set in `.env`)
 - **Adapter:** `@prisma/adapter-libsql` required by Prisma 7
-- **Models:** Profile, Session, ExerciseResult, Achievement, ProfileAchievement, Streak
+- **Models:** Profile, Session, ExerciseResult, Achievement, ProfileAchievement, Streak, Exercise
 - **Cascade deletes:** Deleting a Profile cascades to all related records
 
 ## Testing
@@ -155,3 +164,4 @@ tasks/
 - **Phase 5 (Gamification):** Complete — levels, streaks, achievements, gamification API, badges page, dashboard integration
 - **Phase 6 (Progress):** Complete — progress API, progress page (heatmap, accuracy, topics), dashboard with live data
 - **Phase 7 (Polish):** Complete — loading states, error boundaries, iPad Safari fixes, PWA manifest, CSS polish
+- **Phase 8 (Exercise Pool):** In progress — replaces live AI generation with a pre-seeded DB pool to eliminate Gemini free-tier 429 failures. See [tasks/prd-phase8-exercise-pool.md](tasks/prd-phase8-exercise-pool.md)

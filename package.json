@@ -10,7 +10,9 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "test:e2e": "playwright test",
-    "seed:achievements": "tsx prisma/seed-achievements.ts"
+    "seed:achievements": "tsx prisma/seed-achievements.ts",
+    "seed:exercises": "tsx prisma/seed-exercises.ts",
+    "seed:load:exercises": "tsx prisma/seed-exercises-load.ts"
   },
   "dependencies": {
     "@google/generative-ai": "^0.24.1",
@@ -34,6 +36,7 @@
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "@vitejs/plugin-react": "^6.0.1",
+    "better-sqlite3": "^12.9.0",
     "dotenv": "^17.4.2",
     "eslint": "^9",
     "eslint-config-next": "16.2.4",
