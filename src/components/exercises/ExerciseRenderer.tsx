@@ -61,7 +61,9 @@ export function ExerciseRenderer({
       case "multiple_choice":
         return exercise.options[exercise.correctIndex];
       case "fill_in_the_blank":
-        return exercise.correctAnswer;
+        return exercise.blanks
+          ? exercise.blanks.map((b) => b.correctAnswer).join(" | ")
+          : exercise.correctAnswer;
       case "true_false":
         return exercise.isTrue ? "True" : "False";
       case "reorder":

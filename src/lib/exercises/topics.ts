@@ -8,6 +8,9 @@ export interface Topic {
   language: Language;
   difficulty: number; // 1-5
   description: string; // Used in prompts to guide generation
+  // When true, omitted from getTopicsByLanguage (e.g. drill-only topics not
+  // shown in the Free Practice picker). getTopic(id) still resolves them.
+  hidden?: boolean;
 }
 
 const DE_TOPICS: Topic[] = [
@@ -140,6 +143,30 @@ const DE_TOPICS: Topic[] = [
     description:
       "Short creative writing prompts in German: describe a picture, continue a story, write a short letter or diary entry (2-3 sentences expected).",
   },
+
+  // Drills (hidden — surfaced only via the Drills page, not Free Practice)
+  {
+    id: "de_drill_nouns",
+    labelDE: "Drill: Nomen (Artikel + Plural)",
+    labelEN: "Drill: Nouns",
+    category: "grammar",
+    language: "de",
+    difficulty: 2,
+    hidden: true,
+    description:
+      "Two-blank drill: singular article (der/die/das) + plural form for common German nouns.",
+  },
+  {
+    id: "de_drill_verbs",
+    labelDE: "Drill: Verben (Konjugation)",
+    labelEN: "Drill: Verbs",
+    category: "grammar",
+    language: "de",
+    difficulty: 2,
+    hidden: true,
+    description:
+      "Single-blank drill: conjugate German verbs across Präsens, Präteritum, and Perfekt for a given pronoun.",
+  },
 ];
 
 const EN_TOPICS: Topic[] = [
@@ -257,7 +284,7 @@ const EN_TOPICS: Topic[] = [
 export const ALL_TOPICS: Topic[] = [...DE_TOPICS, ...EN_TOPICS];
 
 export function getTopicsByLanguage(language: Language): Topic[] {
-  return ALL_TOPICS.filter((t) => t.language === language);
+  return ALL_TOPICS.filter((t) => t.language === language && !t.hidden);
 }
 
 export function getTopicsByCategory(
@@ -265,7 +292,7 @@ export function getTopicsByCategory(
   category: TopicCategory
 ): Topic[] {
   return ALL_TOPICS.filter(
-    (t) => t.language === language && t.category === category
+    (t) => t.language === language && t.category === category && !t.hidden
   );
 }
 

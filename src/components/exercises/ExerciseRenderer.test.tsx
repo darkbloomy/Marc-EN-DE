@@ -94,6 +94,67 @@ describe("FillInTheBlank", () => {
     fireEvent.click(screen.getByText("Show hint"));
     expect(screen.getByText("A verb meaning to be seated")).toBeInTheDocument();
   });
+
+  describe("multi-blank (drills)", () => {
+    const nounDrill: FillInTheBlankExercise = {
+      type: "fill_in_the_blank",
+      sentence: "Singular: ___ Hund. Plural: die ___",
+      correctAnswer: "der",
+      blanks: [{ correctAnswer: "der" }, { correctAnswer: "Hunde" }],
+      explanation: "der Hund, Plural: die Hunde.",
+    };
+
+    it("renders one input per ___", () => {
+      render(<FillInTheBlank exercise={nounDrill} onAnswer={vi.fn()} />);
+      expect(screen.getAllByPlaceholderText("...")).toHaveLength(2);
+    });
+
+    it("Check Answer disabled until all blanks filled", () => {
+      render(<FillInTheBlank exercise={nounDrill} onAnswer={vi.fn()} />);
+      const inputs = screen.getAllByPlaceholderText("...");
+      const button = screen.getByText("Check Answer") as HTMLButtonElement;
+      expect(button.disabled).toBe(true);
+      fireEvent.change(inputs[0], { target: { value: "der" } });
+      expect(button.disabled).toBe(true);
+      fireEvent.change(inputs[1], { target: { value: "Hunde" } });
+      expect(button.disabled).toBe(false);
+    });
+
+    it("counts as correct only when ALL blanks match", () => {
+      const onAnswer = vi.fn();
+      render(<FillInTheBlank exercise={nounDrill} onAnswer={onAnswer} />);
+      const inputs = screen.getAllByPlaceholderText("...");
+      fireEvent.change(inputs[0], { target: { value: "der" } });
+      fireEvent.change(inputs[1], { target: { value: "Hunden" } }); // wrong
+      fireEvent.click(screen.getByText("Check Answer"));
+      expect(onAnswer).toHaveBeenCalledWith(false, "der | Hunden");
+    });
+
+    it("counts as correct when both blanks match (case-insensitive)", () => {
+      const onAnswer = vi.fn();
+      render(<FillInTheBlank exercise={nounDrill} onAnswer={onAnswer} />);
+      const inputs = screen.getAllByPlaceholderText("...");
+      fireEvent.change(inputs[0], { target: { value: "DER" } });
+      fireEvent.change(inputs[1], { target: { value: "hunde" } });
+      fireEvent.click(screen.getByText("Check Answer"));
+      expect(onAnswer).toHaveBeenCalledWith(true, "DER | hunde");
+    });
+
+    it("collapses repeated whitespace before comparing (Perfekt)", () => {
+      const verbDrill: FillInTheBlankExercise = {
+        type: "fill_in_the_blank",
+        sentence: "gehen | Perfekt | wir → ___",
+        correctAnswer: "sind gegangen",
+        explanation: "gehen (Perfekt, wir): sind gegangen — Hilfsverb: sein.",
+      };
+      const onAnswer = vi.fn();
+      render(<FillInTheBlank exercise={verbDrill} onAnswer={onAnswer} />);
+      const input = screen.getByPlaceholderText("...");
+      fireEvent.change(input, { target: { value: "sind  gegangen" } });
+      fireEvent.click(screen.getByText("Check Answer"));
+      expect(onAnswer).toHaveBeenCalledWith(true, "sind  gegangen");
+    });
+  });
 });
 
 describe("TrueFalse", () => {

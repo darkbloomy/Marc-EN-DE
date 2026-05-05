@@ -83,3 +83,36 @@ export async function buildFreePracticeSession(
   const exercises = await generateForPlan(topic, FREE_TYPE_PLAN, difficulty);
   return shuffleArray(exercises).slice(0, FREE_EXERCISE_COUNT);
 }
+
+export async function buildDrillsSession(opts: {
+  nounCount: number;
+  verbCount: number;
+  difficulty?: number;
+}): Promise<GeneratedExercise[]> {
+  const calls: Promise<{ exercises: GeneratedExercise[] }>[] = [];
+
+  if (opts.nounCount > 0) {
+    calls.push(
+      generateExercises({
+        topicId: "de_drill_nouns",
+        exerciseType: "fill_in_the_blank",
+        count: opts.nounCount,
+        difficulty: opts.difficulty,
+      })
+    );
+  }
+
+  if (opts.verbCount > 0) {
+    calls.push(
+      generateExercises({
+        topicId: "de_drill_verbs",
+        exerciseType: "fill_in_the_blank",
+        count: opts.verbCount,
+        difficulty: opts.difficulty,
+      })
+    );
+  }
+
+  const batches = await Promise.all(calls);
+  return shuffleArray(batches.flatMap((b) => b.exercises));
+}

@@ -54,4 +54,20 @@ describe("topic registry", () => {
       expect(topic.id.startsWith(topic.language + "_")).toBe(true);
     }
   });
+
+  it("hidden topics are excluded from getTopicsByLanguage", () => {
+    const visible = getTopicsByLanguage("de");
+    expect(visible.find((t) => t.id === "de_drill_nouns")).toBeUndefined();
+    expect(visible.find((t) => t.id === "de_drill_verbs")).toBeUndefined();
+  });
+
+  it("hidden topics still resolve via getTopic by id", () => {
+    expect(getTopic("de_drill_nouns")?.hidden).toBe(true);
+    expect(getTopic("de_drill_verbs")?.hidden).toBe(true);
+  });
+
+  it("hidden topics excluded from getTopicsByCategory", () => {
+    const grammar = getTopicsByCategory("de", "grammar");
+    expect(grammar.find((t) => t.id === "de_drill_nouns")).toBeUndefined();
+  });
 });

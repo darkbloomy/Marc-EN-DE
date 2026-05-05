@@ -3,11 +3,12 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useProfile } from "@/contexts/ProfileContext";
-import { Home, BookOpen, BarChart3, Award } from "lucide-react";
+import { Home, BookOpen, BarChart3, Award, PencilRuler } from "lucide-react";
 
 const NAV_ITEMS = [
   { label: "Home", icon: Home, path: "" },
   { label: "Practice", icon: BookOpen, path: "/practice/daily" },
+  { label: "Drills", icon: PencilRuler, path: "/practice/drills" },
   { label: "Progress", icon: BarChart3, path: "/progress" },
   { label: "Badges", icon: Award, path: "/badges" },
 ];

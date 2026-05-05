@@ -11,7 +11,7 @@ import {
 const createSessionSchema = z.object({
   profileId: z.string().min(1),
   language: z.enum(["de", "en"]),
-  mode: z.enum(["daily", "free"]),
+  mode: z.enum(["daily", "free", "drills"]),
 });
 
 export async function POST(request: Request) {

@@ -24,9 +24,12 @@ export interface MultipleChoiceExercise {
 
 export interface FillInTheBlankExercise {
   type: "fill_in_the_blank";
-  sentence: string; // Use ___ for the blank
+  sentence: string; // Use ___ for each blank (one or more)
   correctAnswer: string;
-  acceptableAnswers?: string[]; // Alternative correct answers
+  acceptableAnswers?: string[]; // Alternative correct answers (first blank only)
+  // Multi-blank items: one entry per "___" in sentence. When present, takes
+  // precedence over correctAnswer/acceptableAnswers for grading.
+  blanks?: Array<{ correctAnswer: string; acceptableAnswers?: string[] }>;
   hint?: string;
   explanation: string;
 }

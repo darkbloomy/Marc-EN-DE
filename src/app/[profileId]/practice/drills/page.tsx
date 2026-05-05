@@ -2,12 +2,12 @@
 
 import { useState } from "react";
 import { useProfile } from "@/contexts/ProfileContext";
-import type { GeneratedExercise, Language } from "@/lib/exercises/types";
+import type { GeneratedExercise } from "@/lib/exercises/types";
 import { ExerciseRenderer } from "@/components/exercises/ExerciseRenderer";
 import { SessionSummary } from "@/components/SessionSummary";
-import { Loader2 } from "lucide-react";
+import { Loader2, PencilRuler } from "lucide-react";
 
-type Stage = "pick-language" | "loading" | "practicing" | "summary";
+type Stage = "pick" | "loading" | "practicing" | "summary";
 
 interface ExerciseResultSummary {
   isCorrect: boolean;
@@ -15,62 +15,76 @@ interface ExerciseResultSummary {
   pointsEarned: number;
 }
 
-export default function DailyPracticePage() {
+const COUNT_OPTIONS = [10, 15, 20];
+
+export default function DrillsPage() {
   const profile = useProfile();
-  const [stage, setStage] = useState<Stage>("pick-language");
+  const [stage, setStage] = useState<Stage>("pick");
+  const [nounCount, setNounCount] = useState(10);
+  const [verbCount, setVerbCount] = useState(10);
   const [exercises, setExercises] = useState<GeneratedExercise[]>([]);
   const [results, setResults] = useState<ExerciseResultSummary[]>([]);
   const [sessionId, setSessionId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
-  async function startSession(language: Language) {
+  const total = nounCount + verbCount;
+
+  async function startDrills() {
+    if (total === 0) return;
     setStage("loading");
     setError(null);
 
     try {
-      // Create session in DB
       const sessionRes = await fetch("/api/sessions", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           profileId: profile.id,
-          language,
-          mode: "daily",
+          language: "de",
+          mode: "drills",
         }),
       });
       const sessionData = await sessionRes.json();
-      if (!sessionRes.ok) throw new Error(sessionData.error ?? "Failed to create session");
+      if (!sessionRes.ok)
+        throw new Error(sessionData.error ?? "Failed to create session");
       setSessionId(sessionData.data.id);
 
-      // Build the daily session (mixed topics, mixed types, adaptive difficulty)
       const buildRes = await fetch("/api/sessions/build", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           profileId: profile.id,
-          language,
-          mode: "daily",
+          language: "de",
+          mode: "drills",
+          nounCount,
+          verbCount,
         }),
       });
       const buildData = await buildRes.json();
-      if (!buildRes.ok) throw new Error(buildData.error ?? "Failed to build session");
+      if (!buildRes.ok)
+        throw new Error(buildData.error ?? "Failed to build session");
+
+      if (!buildData.data.exercises?.length) {
+        throw new Error("No drill exercises available yet — seed the pool first.");
+      }
 
       setExercises(buildData.data.exercises);
       setStage("practicing");
     } catch (err) {
       setError(err instanceof Error ? err.message : "Something went wrong");
-      setStage("pick-language");
+      setStage("pick");
     }
   }
 
   async function handleComplete(exerciseResults: ExerciseResultSummary[]) {
     setResults(exerciseResults);
 
-    // Save individual results and complete session
     if (sessionId) {
-      const totalPoints = exerciseResults.reduce((sum, r) => sum + r.pointsEarned, 0);
+      const totalPoints = exerciseResults.reduce(
+        (sum, r) => sum + r.pointsEarned,
+        0
+      );
 
-      // Save each result
       for (let i = 0; i < exerciseResults.length; i++) {
         const ex = exercises[i];
         const result = exerciseResults[i];
@@ -82,7 +96,12 @@ export default function DailyPracticePage() {
             category: ex.category,
             topic: ex.topic,
             exerciseType: ex.exercise.type,
-            question: "question" in ex.exercise ? ex.exercise.question : ex.exercise.type,
+            question:
+              "question" in ex.exercise
+                ? ex.exercise.question
+                : "sentence" in ex.exercise
+                  ? ex.exercise.sentence
+                  : ex.exercise.type,
             userAnswer: result.userAnswer,
             correctAnswer: getCorrectAnswer(ex),
             isCorrect: result.isCorrect,
@@ -92,7 +111,6 @@ export default function DailyPracticePage() {
         });
       }
 
-      // Complete session
       await fetch(`/api/sessions/${sessionId}/complete`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -107,18 +125,25 @@ export default function DailyPracticePage() {
   }
 
   function handlePracticeAgain() {
-    setStage("pick-language");
+    setStage("pick");
     setExercises([]);
     setResults([]);
     setSessionId(null);
     setError(null);
   }
 
-  if (stage === "pick-language") {
+  if (stage === "pick") {
     return (
-      <div className="max-w-md mx-auto text-center space-y-6 py-8">
-        <h1 className="text-2xl font-bold text-gray-800">Daily Practice</h1>
-        <p className="text-gray-500">Choose your language for today&apos;s session</p>
+      <div className="max-w-lg mx-auto space-y-8 py-8">
+        <div className="text-center space-y-2">
+          <div className="inline-flex items-center justify-center w-14 h-14 bg-emerald-100 rounded-2xl mb-2">
+            <PencilRuler size={28} className="text-emerald-600" />
+          </div>
+          <h1 className="text-2xl font-bold text-gray-800">Grammar Drills 🇩🇪</h1>
+          <p className="text-gray-500">
+            Choose how many of each to practice
+          </p>
+        </div>
 
         {error && (
           <div className="bg-red-50 text-red-600 rounded-xl p-3 text-sm">
@@ -126,25 +151,31 @@ export default function DailyPracticePage() {
           </div>
         )}
 
-        <div className="grid grid-cols-2 gap-4">
-          <button
-            onClick={() => startSession("de")}
-            className="flex flex-col items-center gap-3 p-8 bg-white rounded-2xl border-2 border-gray-100 hover:border-blue-400 hover:shadow-md transition-all"
-          >
-            <span className="text-5xl">🇩🇪</span>
-            <span className="text-lg font-semibold text-gray-800">Deutsch</span>
-            <span className="text-sm text-gray-500">German</span>
-          </button>
+        <CountPicker
+          label="Nouns (Artikel + Plural)"
+          emoji="📦"
+          value={nounCount}
+          onChange={setNounCount}
+        />
+        <CountPicker
+          label="Verbs (Konjugation)"
+          emoji="🏃"
+          value={verbCount}
+          onChange={setVerbCount}
+        />
 
-          <button
-            onClick={() => startSession("en")}
-            className="flex flex-col items-center gap-3 p-8 bg-white rounded-2xl border-2 border-gray-100 hover:border-blue-400 hover:shadow-md transition-all"
-          >
-            <span className="text-5xl">🇬🇧</span>
-            <span className="text-lg font-semibold text-gray-800">English</span>
-            <span className="text-sm text-gray-500">Englisch</span>
-          </button>
+        <div className="bg-white rounded-2xl border border-gray-100 p-4 text-center">
+          <div className="text-sm text-gray-500">Total exercises</div>
+          <div className="text-3xl font-bold text-gray-800">{total}</div>
         </div>
+
+        <button
+          onClick={startDrills}
+          disabled={total === 0}
+          className="w-full py-4 px-4 bg-emerald-600 text-white font-semibold rounded-2xl text-lg hover:bg-emerald-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+        >
+          Start Drills
+        </button>
       </div>
     );
   }
@@ -152,8 +183,8 @@ export default function DailyPracticePage() {
   if (stage === "loading") {
     return (
       <div className="flex flex-col items-center justify-center py-20 gap-4">
-        <Loader2 size={48} className="text-blue-500 animate-spin" />
-        <p className="text-gray-500 text-lg">Generating your exercises...</p>
+        <Loader2 size={48} className="text-emerald-500 animate-spin" />
+        <p className="text-gray-500 text-lg">Preparing your drills...</p>
       </div>
     );
   }
@@ -166,10 +197,48 @@ export default function DailyPracticePage() {
     );
   }
 
-  // summary
   return (
     <div className="py-8">
       <SessionSummary results={results} onPracticeAgain={handlePracticeAgain} />
+    </div>
+  );
+}
+
+function CountPicker({
+  label,
+  emoji,
+  value,
+  onChange,
+}: {
+  label: string;
+  emoji: string;
+  value: number;
+  onChange: (n: number) => void;
+}) {
+  return (
+    <div className="space-y-2">
+      <div className="flex items-center gap-2 text-sm font-semibold text-gray-700">
+        <span className="text-xl">{emoji}</span>
+        {label}
+      </div>
+      <div className="grid grid-cols-3 gap-2">
+        {COUNT_OPTIONS.map((n) => {
+          const isActive = value === n;
+          return (
+            <button
+              key={n}
+              onClick={() => onChange(n)}
+              className={`py-3 rounded-xl text-lg font-semibold border-2 transition-colors ${
+                isActive
+                  ? "bg-emerald-500 border-emerald-500 text-white"
+                  : "bg-white border-gray-200 text-gray-700 hover:border-emerald-300"
+              }`}
+            >
+              {n}
+            </button>
+          );
+        })}
+      </div>
     </div>
   );
 }

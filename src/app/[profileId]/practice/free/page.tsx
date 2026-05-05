@@ -256,7 +256,9 @@ function getCorrectAnswer(ex: GeneratedExercise): string {
     case "multiple_choice":
       return ex.exercise.options[ex.exercise.correctIndex];
     case "fill_in_the_blank":
-      return ex.exercise.correctAnswer;
+      return ex.exercise.blanks
+        ? ex.exercise.blanks.map((b) => b.correctAnswer).join(" | ")
+        : ex.exercise.correctAnswer;
     case "true_false":
       return ex.exercise.isTrue ? "True" : "False";
     case "reorder":
