@@ -20,6 +20,9 @@ const exerciseResultSchema = z.object({
   isCorrect: z.boolean(),
   pointsEarned: z.number().int().min(0),
   timeSpentSec: z.number().int().min(0).optional().default(0),
+  source: z.string().optional().default("unknown"),
+  exerciseId: z.string().optional().nullable(),
+  contentHash: z.string().optional().nullable(),
 });
 
 export async function POST(

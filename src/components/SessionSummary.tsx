@@ -12,11 +12,13 @@ interface ExerciseResultSummary {
 
 interface SessionSummaryProps {
   results: ExerciseResultSummary[];
+  sources?: Array<"ai" | "db" | "fallback" | undefined>;
   onPracticeAgain: () => void;
 }
 
 export function SessionSummary({
   results,
+  sources,
   onPracticeAgain,
 }: SessionSummaryProps) {
   const profile = useProfile();
@@ -26,6 +28,23 @@ export function SessionSummary({
   const totalCount = results.length;
   const accuracy =
     totalCount > 0 ? Math.round((correctCount / totalCount) * 100) : 0;
+
+  // Provenance breakdown: how many exercises were freshly AI-generated vs. drawn
+  // from the pre-seeded pool / hardcoded fallback.
+  const sourceCounts = (sources ?? []).reduce(
+    (acc, s) => {
+      if (s === "ai") acc.ai += 1;
+      else if (s === "db") acc.db += 1;
+      else if (s === "fallback") acc.fallback += 1;
+      return acc;
+    },
+    { ai: 0, db: 0, fallback: 0 }
+  );
+  const sourceChips = [
+    sourceCounts.ai > 0 ? `✨ ${sourceCounts.ai} fresh (AI)` : null,
+    sourceCounts.db > 0 ? `📚 ${sourceCounts.db} from pool` : null,
+    sourceCounts.fallback > 0 ? `🛟 ${sourceCounts.fallback} fallback` : null,
+  ].filter(Boolean) as string[];
 
   let message: string;
   let emoji: string;
@@ -52,6 +71,18 @@ export function SessionSummary({
           Session Complete!
         </h1>
         <p className="text-gray-500 mt-1">{message}</p>
+        {sourceChips.length > 0 && (
+          <div className="mt-3 flex flex-wrap justify-center gap-2">
+            {sourceChips.map((chip) => (
+              <span
+                key={chip}
+                className="text-xs text-gray-500 bg-gray-100 rounded-full px-3 py-1"
+              >
+                {chip}
+              </span>
+            ))}
+          </div>
+        )}
       </div>
 
       {/* Stats cards */}

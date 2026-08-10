@@ -23,6 +23,7 @@ npm run test:watch   # Run Vitest in watch mode
 npm run test:e2e     # Run Playwright E2E tests
 npm run seed:achievements        # Seed achievement data (idempotent)
 npm run seed:exercises           # Generate exercise pool via AI → JSON files (local only, throttled)
+npm run seed:build:drills        # Build DE/EN grammar drills from CSVs → de.json/en.json
 npm run seed:load:exercises      # Load prisma/exercise-data/*.json into DB (idempotent)
 
 # Prisma
@@ -84,14 +85,17 @@ src/
   generated/
     prisma/                    # Generated Prisma client (do not edit)
   lib/
-    ai.ts                      # Gemini client (used only by seed-exercises script)
+    ai.ts                      # Anthropic Claude client (used by runtime + seed-exercises script)
     api-response.ts            # successResponse, errorResponse, validateBody
     avatars.ts                 # Avatar options (emoji-based)
     exercises/
       types.ts                 # Exercise type definitions (MC, FillBlank, T/F, Reorder, FreeText)
       topics.ts                # Topic registry for DE and EN (22 topics)
       prompts.ts               # System prompt + per-type generation prompts
-      generate.ts              # DB query (Exercise pool) with difficulty widening + fallback
+      generate.ts              # AI / pool / fallback with recent-exclusion + drill pool-first
+      content-hash.ts          # Exercise stem + contentHash for anti-repeat
+      recent.ts                # Load recent exercise keys per profile
+      sheet-html.ts            # Standalone printable worksheet + answer key HTML
       fallbacks.ts             # Hardcoded last-resort exercises per type/language
       cache.ts                 # In-memory cache (10min TTL)
       index.ts                 # Barrel export
@@ -100,7 +104,7 @@ src/
       streaks.ts               # Streak tracking (update on session complete)
       achievements.ts          # Achievement checking and awarding
     sessions/
-      daily-builder.ts         # Daily session builder (picks topics, mixes exercise types)
+      daily-builder.ts         # Daily / free / drills session builders
     prisma.ts                  # Prisma client singleton
     validations.ts             # Zod schemas for profile CRUD
   test/
@@ -130,14 +134,17 @@ docs/
 - **Profile scoping:** Profile pages live under `/[profileId]/...`, layout fetches profile from DB
 - **Avatars:** Emoji-based, defined in `@/lib/avatars` — 10 animal options
 - **No auth:** Profiles are identified by URL path (CUID), no login/passwords
-- **AI client:** `getAIClient()` from `@/lib/ai` is the Gemini client; only used by the `seed-exercises` script, not at runtime
-- **Exercise generation:** `generateExercises({ topicId, exerciseType, count, difficulty })` queries the `Exercise` DB pool with difficulty widening; falls through to hardcoded `fallbacks.ts` only as a last resort
+- **AI client:** `getAnthropicClient()` (aliased as getAIClient) from `@/lib/ai` is the Claude client; used by runtime generation and the seed-exercises script.
+- **Exercise generation:** `generateExercises({ topicId, exerciseType, count, difficulty })` tries real-time Claude (Anthropic) first via the local machine's Claude access (ANTHROPIC_API_KEY or claude CLI auth). On failure (no key, rate limit, etc) falls back to DB pool query (with widening) then to hardcoded `fallbacks.ts`. Caches results for 10min. `source` in batch is "ai" | "db" | "fallback".
 - **Exercise pool:** Pre-generated content lives in the `Exercise` table, seeded from `prisma/exercise-data/*.json`. Each row has `reviewStatus` ("approved"/"draft"/"rejected"), `batchId` (for rollback), and `modelVersion` (provenance)
 - **Exercise types:** `multiple_choice`, `fill_in_the_blank`, `true_false`, `reorder`, `free_text`
 - **Topics:** 12 German + 10 English topics, accessed via `getTopic(id)`, `getTopicsByLanguage(lang)`
 - **Session flow:** Create session → generate exercises → render exercises → save results → complete session → show summary
-- **Daily builder:** Picks 3 random topics, generates 6 exercises with mixed types
-- **Free practice:** User picks language → topic → 5 exercises generated for that topic
+- **Daily builder:** Picks 3 random topics, generates 15 exercises with mixed types
+- **Free practice:** User picks language → topic → 10 exercises generated for that topic
+- **Grammar drills:** DE/EN; categories nouns/plurals, verbs, adjectives (comp/sup), subclauses, prepositions; mixed mode (10/20/30/50 across all aspects) or per-category counts; pool-first from curated CSVs; bilingual wrong-answer explanations (EN + CN)
+- **Printable HTML export:** During practicing/summary (Daily, Free, Drills), **Download HTML** / **Print** builds a standalone worksheet + answer-key file via `sheet-html.ts` / `ExerciseSheetActions`
+- **Anti-repeat:** Excludes pool IDs / content hashes from the profile’s last 7 days of `ExerciseResult`s
 - **Level system:** `calculateLevel(totalPoints)` from `@/lib/gamification/levels` — exponential curve, 50 levels max
 - **Streaks:** Updated automatically on session completion via `updateStreak()` — tracks per-language streaks
 - **Achievements:** Checked automatically on session completion via `checkAndAwardAchievements()` — 18 achievements across streak, mastery, milestone, and special categories
@@ -164,4 +171,4 @@ docs/
 - **Phase 5 (Gamification):** Complete — levels, streaks, achievements, gamification API, badges page, dashboard integration
 - **Phase 6 (Progress):** Complete — progress API, progress page (heatmap, accuracy, topics), dashboard with live data
 - **Phase 7 (Polish):** Complete — loading states, error boundaries, iPad Safari fixes, PWA manifest, CSS polish
-- **Phase 8 (Exercise Pool):** In progress — replaces live AI generation with a pre-seeded DB pool to eliminate Gemini free-tier 429 failures. See [tasks/prd-phase8-exercise-pool.md](tasks/prd-phase8-exercise-pool.md)
+- **Phase 8 (Exercise Pool):** Complete — pre-seeded pool is now a *fallback*; live AI (Claude via local computer access) is primary for variety (real-time generation). Pool + fallbacks protect when no ANTHROPIC_API_KEY or under rate limits. Seed scripts still useful for bulk/curated content.

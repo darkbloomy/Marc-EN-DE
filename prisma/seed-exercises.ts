@@ -4,7 +4,7 @@ import { join } from "node:path";
 import { randomUUID } from "node:crypto";
 import "dotenv/config";
 
-import { getAIClient, AI_MODEL, MAX_TOKENS } from "../src/lib/ai";
+import { getAnthropicClient, AI_MODEL, MAX_TOKENS } from "../src/lib/ai";
 import { ALL_TOPICS, getTopic, type Topic } from "../src/lib/exercises/topics";
 import {
   EXERCISE_TYPES,
@@ -149,18 +149,20 @@ async function generateBucket(
   batchId: string,
 ): Promise<ExerciseRow[]> {
   const prompt = buildGenerationPrompt(topic, type, count, difficulty);
-  const model = getAIClient().getGenerativeModel({
+
+  const response = await getAnthropicClient().messages.create({
     model: modelName,
-    systemInstruction: SYSTEM_PROMPT,
-    generationConfig: {
-      maxOutputTokens: MAX_TOKENS,
-      responseMimeType: "application/json",
-      temperature: 0.9,
-    },
+    max_tokens: MAX_TOKENS,
+    system: SYSTEM_PROMPT,
+    messages: [{ role: "user", content: prompt }],
+    temperature: 0.9,
   });
 
-  const result = await model.generateContent(prompt);
-  const text = result.response.text();
+  const textBlock = response.content.find((block) => block.type === "text");
+  if (!textBlock || textBlock.type !== "text") {
+    throw new Error("No text response from AI");
+  }
+  const text = textBlock.text;
   if (!text) throw new Error("No text response from AI");
 
   const exercises: Exercise[] = parseExerciseResponse(text, count);

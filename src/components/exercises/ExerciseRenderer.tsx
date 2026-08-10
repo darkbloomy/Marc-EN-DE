@@ -89,6 +89,11 @@ export function ExerciseRenderer({
         <ExerciseFeedback
           isCorrect={currentResult.isCorrect}
           explanation={current.exercise.explanation}
+          explanationCN={
+            !currentResult.isCorrect
+              ? current.exercise.explanationCN
+              : undefined
+          }
           correctAnswer={
             !currentResult.isCorrect
               ? getCorrectAnswer(current.exercise)

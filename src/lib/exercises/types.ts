@@ -20,6 +20,7 @@ export interface MultipleChoiceExercise {
   options: string[];
   correctIndex: number;
   explanation: string;
+  explanationCN?: string;
 }
 
 export interface FillInTheBlankExercise {
@@ -32,6 +33,7 @@ export interface FillInTheBlankExercise {
   blanks?: Array<{ correctAnswer: string; acceptableAnswers?: string[] }>;
   hint?: string;
   explanation: string;
+  explanationCN?: string;
 }
 
 export interface TrueFalseExercise {
@@ -39,6 +41,7 @@ export interface TrueFalseExercise {
   statement: string;
   isTrue: boolean;
   explanation: string;
+  explanationCN?: string;
 }
 
 export interface ReorderExercise {
@@ -47,6 +50,7 @@ export interface ReorderExercise {
   scrambledItems: string[];
   correctOrder: string[];
   explanation: string;
+  explanationCN?: string;
 }
 
 export interface FreeTextExercise {
@@ -55,6 +59,7 @@ export interface FreeTextExercise {
   sampleAnswer: string;
   keyPoints: string[]; // Points the answer should cover
   explanation: string;
+  explanationCN?: string;
 }
 
 export type Exercise =
@@ -70,6 +75,9 @@ export interface GeneratedExercise {
   category: TopicCategory;
   topic: string;
   difficulty: number; // 1-5
+  source?: "ai" | "fallback" | "db"; // provenance, carried from the batch
+  poolId?: string; // Exercise table id when sourced from pool
+  contentHash?: string; // type + stem hash for anti-repeat
 }
 
 export interface ExerciseBatch {
@@ -95,3 +103,21 @@ export const POINTS_PER_TYPE: Record<ExerciseType, number> = {
   reorder: 20,
   free_text: 25,
 };
+
+/** Hidden drill topic ids (DE + EN). */
+export const DRILL_TOPIC_IDS = [
+  "de_drill_nouns",
+  "de_drill_verbs",
+  "de_drill_adjectives",
+  "de_drill_subclauses",
+  "de_drill_prepositions",
+  "en_drill_plurals",
+  "en_drill_verbs",
+  "en_drill_adjectives",
+  "en_drill_subclauses",
+  "en_drill_prepositions",
+] as const;
+
+export function isDrillTopic(topicId: string): boolean {
+  return topicId.includes("_drill_");
+}

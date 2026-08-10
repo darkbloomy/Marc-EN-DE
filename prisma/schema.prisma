@@ -24,7 +24,7 @@ model Session {
   id            String    @id @default(cuid())
   profileId     String
   language      String // "de" or "en"
-  mode          String // "daily" or "free"
+  mode          String // "daily" | "free" | "drills"
   startedAt     DateTime  @default(now())
   completedAt   DateTime?
   totalPoints   Int       @default(0)
@@ -45,12 +45,15 @@ model ExerciseResult {
   category      String
   topic         String
   exerciseType  String
-  question      String // JSON string
+  question      String // identifying stem text (or JSON)
   userAnswer    String // JSON string
   correctAnswer String // JSON string
   isCorrect     Boolean
   pointsEarned  Int      @default(0)
   timeSpentSec  Int      @default(0)
+  source        String   @default("unknown") // provenance: "ai" | "db" | "fallback" | "unknown"
+  exerciseId    String? // pool Exercise.id when source is "db"
+  contentHash   String? // stable hash of type + stem for anti-repeat
   createdAt     DateTime @default(now())
 
   session Session @relation(fields: [sessionId], references: [id], onDelete: Cascade)
@@ -58,6 +61,8 @@ model ExerciseResult {
 
   @@index([profileId, language, topic])
   @@index([sessionId])
+  @@index([profileId, createdAt])
+  @@index([profileId, contentHash])
 }
 
 model Achievement {

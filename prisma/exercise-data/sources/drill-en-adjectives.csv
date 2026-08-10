@@ -1,0 +1,41 @@
+difficulty,base,form,answer,hint,explanation,explanationCN
+1,big,comparative,bigger,-er,Short adj: big → bigger → biggest.,短形容词：big → bigger → biggest。
+1,big,superlative,biggest,-est,big → bigger → biggest.,big → bigger → biggest。
+1,small,comparative,smaller,-er,small → smaller → smallest.,small → smaller → smallest。
+2,happy,comparative,happier,y → ier,happy → happier → happiest.,happy → happier → happiest。
+2,happy,superlative,happiest,y → iest,happy → happier → happiest.,happy → happier → happiest。
+2,good,comparative,better,Irregular,good → better → best.,good → better → best。
+2,good,superlative,best,Irregular,good → better → best.,good → better → best。
+3,bad,comparative,worse,Irregular,bad → worse → worst.,bad → worse → worst。
+3,bad,superlative,worst,Irregular,bad → worse → worst.,bad → worse → worst。
+3,interesting,comparative,more interesting,more + adj,Long adjectives use more/most.,长形容词用 more/most。
+3,interesting,superlative,most interesting,most + adj,most interesting.,most interesting。
+4,beautiful,comparative,more beautiful,more,beautiful → more/most beautiful.,beautiful → more/most beautiful。
+4,beautiful,superlative,most beautiful,most,most beautiful.,most beautiful。
+5,hot,comparative,hotter,Double t,hot → hotter → hottest.,hot → hotter → hottest。
+1,hot,superlative,hottest,Double t,hottest.,hottest。
+1,easy,comparative,easier,y → ier,easy → easier → easiest.,easy → easier → easiest。
+1,far,comparative,farther,Irregular/variant,far → farther/further → farthest/furthest.,far → farther/further。
+2,far,superlative,farthest,Irregular,farthest (or furthest).,farthest（或 furthest）。
+2,little,comparative,less,Irregular amount,little → less → least (amount).,little → less → least（数量）。
+2,many,comparative,more,Irregular,many → more → most.,many → more → most。
+2,many,superlative,most,Irregular,most.,most。
+3,old,comparative,older,-er,old → older → oldest.,old → older → oldest。
+3,young,superlative,youngest,-est,youngest.,youngest。
+3,fast,comparative,faster,-er,fast → faster → fastest.,fast → faster → fastest。
+3,slow,superlative,slowest,-est,slowest.,slowest。
+4,expensive,comparative,more expensive,more,Long adj: more expensive.,长形容词：more expensive。
+4,expensive,superlative,most expensive,most,most expensive.,most expensive。
+5,funny,comparative,funnier,y → ier,funny → funnier → funniest.,funny → funnier → funniest。
+1,thin,comparative,thinner,Double n,thin → thinner → thinnest.,thin → thinner → thinnest。
+1,heavy,comparative,heavier,y → ier,heavy → heavier → heaviest.,heavy → heavier → heaviest。
+1,early,comparative,earlier,y → ier,early → earlier → earliest.,early → earlier → earliest。
+2,late,superlative,latest,-est,latest.,latest。
+2,important,comparative,more important,more,more important.,more important。
+2,important,superlative,most important,most,most important.,most important。
+2,well,comparative,better,Adverb irregular,well → better → best.,well → better → best。
+3,much,comparative,more,Irregular,much → more → most.,much → more → most。
+3,clever,comparative,cleverer,-er ok,clever → cleverer (or more clever).,clever → cleverer（也可用 more clever）。
+3,noisy,comparative,noisier,y → ier,noisy → noisier → noisiest.,noisy → noisier → noisiest。
+3,quiet,superlative,quietest,-est,quietest.,quietest。
+4,dangerous,comparative,more dangerous,more,Long: more dangerous.,长形容词：more dangerous。

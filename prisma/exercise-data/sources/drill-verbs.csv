@@ -1,0 +1,61 @@
+difficulty,infinitive,tense,pronoun,answer,auxiliary,hint
+1,spielen,Praesens,ich,spiele,,
+1,spielen,Praesens,du,spielst,,
+1,spielen,Praesens,er,spielt,,
+1,spielen,Praesens,wir,spielen,,
+1,lernen,Praesens,ich,lerne,,
+1,lernen,Praesens,du,lernst,,
+1,machen,Praesens,er,macht,,
+1,machen,Praesens,sie,machen,,Plural sie
+1,kaufen,Praesens,wir,kaufen,,
+1,wohnen,Praesens,ich,wohne,,
+1,fragen,Praesens,ihr,fragt,,
+1,sagen,Praesens,du,sagst,,
+2,sein,Praesens,ich,bin,,unregelmäßig
+2,sein,Praesens,du,bist,,unregelmäßig
+2,sein,Praesens,er,ist,,unregelmäßig
+2,haben,Praesens,ich,habe,,unregelmäßig
+2,haben,Praesens,du,hast,,unregelmäßig
+2,haben,Praesens,er,hat,,unregelmäßig
+2,gehen,Praesens,er,geht,,
+2,kommen,Praesens,du,kommst,,
+2,sehen,Praesens,du,siehst,,Vokalwechsel e→ie
+2,sehen,Praesens,er,sieht,,Vokalwechsel e→ie
+2,fahren,Praesens,du,fährst,,Vokalwechsel a→ä
+2,fahren,Praesens,er,fährt,,Vokalwechsel a→ä
+2,essen,Praesens,du,isst,,Vokalwechsel e→i
+2,essen,Praesens,er,isst,,Vokalwechsel e→i
+2,spielen,Praeteritum,ich,spielte,,
+2,spielen,Praeteritum,wir,spielten,,
+2,lernen,Praeteritum,er,lernte,,
+2,kaufen,Praeteritum,sie,kauften,,Plural sie
+3,gehen,Praeteritum,ich,ging,,starkes Verb
+3,gehen,Praeteritum,wir,gingen,,starkes Verb
+3,kommen,Praeteritum,er,kam,,starkes Verb
+3,kommen,Praeteritum,sie,kamen,,Plural sie
+3,sehen,Praeteritum,ich,sah,,starkes Verb
+3,sehen,Praeteritum,wir,sahen,,starkes Verb
+3,sein,Praeteritum,ich,war,,unregelmäßig
+3,sein,Praeteritum,wir,waren,,unregelmäßig
+3,haben,Praeteritum,ich,hatte,,unregelmäßig
+3,haben,Praeteritum,sie,hatten,,Plural sie
+3,spielen,Perfekt,ich,habe gespielt,haben,
+3,spielen,Perfekt,er,hat gespielt,haben,
+3,machen,Perfekt,wir,haben gemacht,haben,
+3,kaufen,Perfekt,du,hast gekauft,haben,
+3,lernen,Perfekt,ich,habe gelernt,haben,
+3,lesen,Perfekt,er,hat gelesen,haben,starkes Verb
+3,sehen,Perfekt,ich,habe gesehen,haben,starkes Verb
+3,essen,Perfekt,wir,haben gegessen,haben,starkes Verb
+4,gehen,Perfekt,ich,bin gegangen,sein,Hilfsverb sein bei Bewegung
+4,gehen,Perfekt,wir,sind gegangen,sein,Hilfsverb sein bei Bewegung
+4,kommen,Perfekt,er,ist gekommen,sein,Hilfsverb sein bei Bewegung
+4,fahren,Perfekt,sie,sind gefahren,sein,Plural sie + sein
+4,laufen,Perfekt,ich,bin gelaufen,sein,Hilfsverb sein bei Bewegung
+4,fliegen,Perfekt,wir,sind geflogen,sein,Hilfsverb sein bei Bewegung
+4,schwimmen,Perfekt,du,bist geschwommen,sein,Hilfsverb sein bei Bewegung
+4,bleiben,Perfekt,er,ist geblieben,sein,bleiben mit sein
+5,werden,Praeteritum,ich,wurde,,unregelmäßig
+5,werden,Perfekt,er,ist geworden,sein,Hilfsverb sein
+5,sterben,Perfekt,sie,sind gestorben,sein,Plural sie + sein
+5,wissen,Praeteritum,ich,wusste,,unregelmäßig

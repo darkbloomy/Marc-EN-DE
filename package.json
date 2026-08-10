@@ -12,10 +12,12 @@
     "test:e2e": "playwright test",
     "seed:achievements": "tsx prisma/seed-achievements.ts",
     "seed:exercises": "tsx prisma/seed-exercises.ts",
+    "seed:build:drills": "tsx scripts/build-drill-exercises.ts",
     "seed:load:exercises": "tsx prisma/seed-exercises-load.ts"
   },
   "dependencies": {
-    "@google/generative-ai": "^0.24.1",
+    "@anthropic-ai/sdk": "^0.100.1",
+    "@anthropic-ai/vertex-sdk": "^0.16.1",
     "@libsql/client": "^0.17.3",
     "@prisma/adapter-libsql": "^7.8.0",
     "@prisma/client": "^7.8.0",

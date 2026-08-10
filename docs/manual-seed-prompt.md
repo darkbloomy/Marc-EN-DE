@@ -1,6 +1,6 @@
 # Manual Exercise Pool Seed (via another Claude chat)
 
-Use this when you want to generate the exercise pool **without running `npm run seed:exercises`** — for example, to leverage your existing Claude subscription instead of paying for a Gemini API key.
+Use this when you want to generate the exercise pool **without running `npm run seed:exercises`** — for example, to leverage your existing Claude subscription / access (including the one on this computer) instead of a separate Gemini key.
 
 The workflow:
 

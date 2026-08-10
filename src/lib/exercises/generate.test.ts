@@ -5,16 +5,27 @@ vi.mock("@/lib/prisma", () => ({
     exercise: {
       findMany: vi.fn(),
     },
+    exerciseResult: {
+      findMany: vi.fn().mockResolvedValue([]),
+    },
   },
+}));
+
+vi.mock("@/lib/ai", () => ({
+  getAnthropicClient: vi.fn(),
+  AI_MODEL: "claude-3-5-sonnet-20241022",
+  MAX_TOKENS: 4096,
 }));
 
 import { generateExercises, parseExerciseResponse } from "./generate";
 import { prisma } from "@/lib/prisma";
+import { getAnthropicClient } from "@/lib/ai";
+import { clearCache } from "./cache";
 
 const mockedFindMany = vi.mocked(prisma.exercise.findMany);
 
-function poolRow(payload: object) {
-  return { payload: JSON.stringify(payload) };
+function poolRow(payload: object, id = "pool_1") {
+  return { id, payload: JSON.stringify(payload) };
 }
 
 const mcExercise = {
@@ -27,6 +38,13 @@ const mcExercise = {
 
 beforeEach(() => {
   mockedFindMany.mockReset();
+  clearCache();
+
+  // Default: make AI throw so that "pool" tests exercise the fallback paths and prisma mocks
+  const mockCreate = vi.fn().mockRejectedValue(new Error("AI disabled for pool fallback test"));
+  const mockClient = { messages: { create: mockCreate } };
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  vi.mocked(getAnthropicClient).mockReturnValue(mockClient as any);
 });
 
 describe("parseExerciseResponse", () => {
@@ -59,10 +77,12 @@ describe("parseExerciseResponse", () => {
   });
 });
 
-describe("generateExercises (DB pool)", () => {
+describe("generateExercises (pool fallback when AI unavailable)", () => {
   it("returns exercises from the pool when exact difficulty matches", async () => {
     mockedFindMany.mockResolvedValueOnce(
-      Array(5).fill(null).map(() => poolRow(mcExercise)) as never,
+      Array(5)
+        .fill(null)
+        .map((_, i) => poolRow(mcExercise, `pool_${i}`)) as never,
     );
 
     const batch = await generateExercises({
@@ -75,6 +95,8 @@ describe("generateExercises (DB pool)", () => {
     expect(batch.source).toBe("db");
     expect(batch.exercises).toHaveLength(3);
     expect(batch.exercises[0].exercise.type).toBe("multiple_choice");
+    expect(batch.exercises[0].poolId).toBeTruthy();
+    expect(batch.exercises[0].contentHash).toBeTruthy();
     expect(mockedFindMany).toHaveBeenCalledTimes(1);
     expect(mockedFindMany.mock.calls[0][0]?.where).toMatchObject({
       language: "de",
@@ -82,6 +104,63 @@ describe("generateExercises (DB pool)", () => {
       exerciseType: "multiple_choice",
       reviewStatus: "approved",
       difficulty: 2,
+    });
+  });
+
+  it("prefers pool for drill topics even when AI would succeed", async () => {
+    const mockCreate = vi.fn().mockResolvedValue({
+      content: [{ type: "text", text: JSON.stringify(mcExercise) }],
+    });
+    const mockClient = { messages: { create: mockCreate } };
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    vi.mocked(getAnthropicClient).mockReturnValue(mockClient as any);
+
+    mockedFindMany.mockResolvedValueOnce(
+      Array(5)
+        .fill(null)
+        .map((_, i) =>
+          poolRow(
+            {
+              type: "fill_in_the_blank",
+              sentence: `Singular: ___ Hund. Plural: die ___`,
+              correctAnswer: "der",
+              blanks: [{ correctAnswer: "der" }, { correctAnswer: "Hunde" }],
+              explanation: "e",
+            },
+            `drill_${i}`,
+          ),
+        ) as never,
+    );
+
+    const batch = await generateExercises({
+      topicId: "de_drill_nouns",
+      exerciseType: "fill_in_the_blank",
+      count: 3,
+      difficulty: 2,
+      preferPool: true,
+    });
+
+    expect(batch.source).toBe("db");
+    expect(mockCreate).not.toHaveBeenCalled();
+  });
+
+  it("excludes recent pool ids from the query when provided", async () => {
+    mockedFindMany.mockResolvedValueOnce(
+      Array(4)
+        .fill(null)
+        .map((_, i) => poolRow(mcExercise, `ok_${i}`)) as never,
+    );
+
+    await generateExercises({
+      topicId: "de_articles",
+      exerciseType: "multiple_choice",
+      count: 2,
+      difficulty: 2,
+      excludePoolIds: ["seen_1", "seen_2"],
+    });
+
+    expect(mockedFindMany.mock.calls[0][0]?.where).toMatchObject({
+      id: { notIn: ["seen_1", "seen_2"] },
     });
   });
 
@@ -203,5 +282,99 @@ describe("generateExercises (DB pool)", () => {
       difficulty: { in: number[] };
     };
     expect(widenedWhere.difficulty.in.sort()).toEqual([4, 5]);
+  });
+});
+
+describe("generateExercises (live AI primary)", () => {
+  it("uses AI and returns source 'ai' when generation succeeds", async () => {
+    const mockCreate = vi.fn().mockResolvedValueOnce({
+      content: [{ type: "text", text: JSON.stringify(mcExercise) }],
+    });
+    const mockClient = { messages: { create: mockCreate } };
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    vi.mocked(getAnthropicClient).mockReturnValue(mockClient as any);
+
+    const batch = await generateExercises({
+      topicId: "de_articles",
+      exerciseType: "multiple_choice",
+      count: 1,
+    });
+
+    expect(batch.source).toBe("ai");
+    expect(batch.exercises).toHaveLength(1);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    expect((batch.exercises[0].exercise as any).question).toBe("Q?");
+    expect(mockCreate).toHaveBeenCalledTimes(1);
+  });
+
+  it("caches AI result and does not call AI again within TTL for same key", async () => {
+    const mockCreate = vi.fn().mockResolvedValue({
+      content: [{ type: "text", text: JSON.stringify(mcExercise) }],
+    });
+    const mockClient = { messages: { create: mockCreate } };
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    vi.mocked(getAnthropicClient).mockReturnValue(mockClient as any);
+
+    await generateExercises({
+      topicId: "de_articles",
+      exerciseType: "multiple_choice",
+      count: 1,
+      difficulty: 3,
+    });
+    expect(mockCreate).toHaveBeenCalledTimes(1);
+
+    // second call hits cache, no AI
+    const batch2 = await generateExercises({
+      topicId: "de_articles",
+      exerciseType: "multiple_choice",
+      count: 1,
+      difficulty: 3,
+    });
+    expect(mockCreate).toHaveBeenCalledTimes(1);
+    expect(batch2.source).toBe("ai");
+  });
+
+  it("falls back to pool (and calls prisma) when AI generation throws", async () => {
+    // Ensure AI throws (re-apply default behavior)
+    const mockCreate = vi.fn().mockRejectedValue(new Error("rate limit or no key"));
+    const mockClient = { messages: { create: mockCreate } };
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    vi.mocked(getAnthropicClient).mockReturnValue(mockClient as any);
+
+    mockedFindMany.mockResolvedValueOnce(
+      Array(4).fill(null).map(() => poolRow(mcExercise)) as never,
+    );
+
+    const batch = await generateExercises({
+      topicId: "de_articles",
+      exerciseType: "multiple_choice",
+      count: 2,
+    });
+
+    expect(batch.source).toBe("db");
+    expect(batch.exercises).toHaveLength(2);
+    expect(mockedFindMany).toHaveBeenCalled();
+  });
+
+  it("falls back to hardcoded when both AI and pool fail", async () => {
+    const mockCreate = vi.fn().mockRejectedValue(new Error("AI boom"));
+    const mockClient = { messages: { create: mockCreate } };
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    vi.mocked(getAnthropicClient).mockReturnValue(mockClient as any);
+
+    mockedFindMany.mockRejectedValueOnce(new Error("db also down"));
+
+    const batch = await generateExercises({
+      topicId: "de_articles",
+      exerciseType: "multiple_choice",
+      count: 2,
+    });
+
+    expect(batch.source).toBe("fallback");
+    expect(batch.exercises.length).toBeGreaterThan(0);
   });
 });

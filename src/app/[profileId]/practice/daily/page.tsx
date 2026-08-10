@@ -3,7 +3,12 @@
 import { useState } from "react";
 import { useProfile } from "@/contexts/ProfileContext";
 import type { GeneratedExercise, Language } from "@/lib/exercises/types";
+import {
+  getExerciseQuestionText,
+  hashExerciseContent,
+} from "@/lib/exercises/content-hash";
 import { ExerciseRenderer } from "@/components/exercises/ExerciseRenderer";
+import { ExerciseSheetActions } from "@/components/ExerciseSheetActions";
 import { SessionSummary } from "@/components/SessionSummary";
 import { Loader2 } from "lucide-react";
 
@@ -18,12 +23,14 @@ interface ExerciseResultSummary {
 export default function DailyPracticePage() {
   const profile = useProfile();
   const [stage, setStage] = useState<Stage>("pick-language");
+  const [language, setLanguage] = useState<Language>("de");
   const [exercises, setExercises] = useState<GeneratedExercise[]>([]);
   const [results, setResults] = useState<ExerciseResultSummary[]>([]);
   const [sessionId, setSessionId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
-  async function startSession(language: Language) {
+  async function startSession(selectedLanguage: Language) {
+    setLanguage(selectedLanguage);
     setStage("loading");
     setError(null);
 
@@ -34,7 +41,7 @@ export default function DailyPracticePage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           profileId: profile.id,
-          language,
+          language: selectedLanguage,
           mode: "daily",
         }),
       });
@@ -48,7 +55,7 @@ export default function DailyPracticePage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           profileId: profile.id,
-          language,
+          language: selectedLanguage,
           mode: "daily",
         }),
       });
@@ -82,12 +89,15 @@ export default function DailyPracticePage() {
             category: ex.category,
             topic: ex.topic,
             exerciseType: ex.exercise.type,
-            question: "question" in ex.exercise ? ex.exercise.question : ex.exercise.type,
+            question: getExerciseQuestionText(ex.exercise),
             userAnswer: result.userAnswer,
             correctAnswer: getCorrectAnswer(ex),
             isCorrect: result.isCorrect,
             pointsEarned: result.pointsEarned,
             timeSpentSec: 0,
+            source: ex.source ?? "unknown",
+            exerciseId: ex.poolId ?? null,
+            contentHash: ex.contentHash ?? hashExerciseContent(ex.exercise),
           }),
         });
       }
@@ -158,9 +168,18 @@ export default function DailyPracticePage() {
     );
   }
 
+  const sheetTitle =
+    language === "de" ? "Daily Practice — German" : "Daily Practice — English";
+
   if (stage === "practicing") {
     return (
-      <div className="max-w-2xl mx-auto py-4">
+      <div className="max-w-2xl mx-auto py-4 space-y-4">
+        <ExerciseSheetActions
+          exercises={exercises}
+          language={language}
+          title={sheetTitle}
+          mode="daily"
+        />
         <ExerciseRenderer exercises={exercises} onComplete={handleComplete} />
       </div>
     );
@@ -168,8 +187,18 @@ export default function DailyPracticePage() {
 
   // summary
   return (
-    <div className="py-8">
-      <SessionSummary results={results} onPracticeAgain={handlePracticeAgain} />
+    <div className="py-8 space-y-4 max-w-2xl mx-auto">
+      <ExerciseSheetActions
+        exercises={exercises}
+        language={language}
+        title={sheetTitle}
+        mode="daily"
+      />
+      <SessionSummary
+        results={results}
+        sources={exercises.map((e) => e.source)}
+        onPracticeAgain={handlePracticeAgain}
+      />
     </div>
   );
 }

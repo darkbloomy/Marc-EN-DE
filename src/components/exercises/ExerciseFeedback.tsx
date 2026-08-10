@@ -5,6 +5,7 @@ import { CheckCircle, XCircle } from "lucide-react";
 interface ExerciseFeedbackProps {
   isCorrect: boolean;
   explanation: string;
+  explanationCN?: string;
   correctAnswer?: string;
   pointsEarned: number;
   onNext: () => void;
@@ -13,6 +14,7 @@ interface ExerciseFeedbackProps {
 export function ExerciseFeedback({
   isCorrect,
   explanation,
+  explanationCN,
   correctAnswer,
   pointsEarned,
   onNext,
@@ -52,6 +54,12 @@ export function ExerciseFeedback({
       )}
 
       <p className="text-sm text-gray-700">{explanation}</p>
+
+      {!isCorrect && explanationCN && (
+        <p className="text-sm text-gray-600 mt-2 pt-2 border-t border-red-100">
+          {explanationCN}
+        </p>
+      )}
 
       <button
         onClick={onNext}

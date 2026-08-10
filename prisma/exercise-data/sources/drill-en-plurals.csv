@@ -1,0 +1,41 @@
+difficulty,singular,plural,hint,explanation,explanationCN
+1,cat,cats,Add -s,Most nouns add -s: cat → cats.,大多数名词加 -s：cat → cats。
+1,dog,dogs,Add -s,dog → dogs.,dog → dogs。
+1,book,books,Add -s,book → books.,book → books。
+2,box,boxes,Add -es after x,Nouns ending in -x/-s/-ch/-sh add -es: box → boxes.,以 x/s/ch/sh 结尾加 -es：box → boxes。
+2,bus,buses,Add -es,bus → buses.,bus → buses。
+2,church,churches,Add -es,church → churches.,church → churches。
+2,wish,wishes,Add -es,wish → wishes.,wish → wishes。
+3,baby,babies,y → ies,Consonant + y → ies: baby → babies.,辅音+y 变 ies：baby → babies。
+3,city,cities,y → ies,city → cities.,city → cities。
+3,boy,boys,vowel + y → ys,Vowel + y keeps y + s: boy → boys.,元音+y 直接加 s：boy → boys。
+3,day,days,vowel + y,day → days.,day → days。
+4,knife,knives,f → ves,knife → knives.,knife → knives。
+4,leaf,leaves,f → ves,leaf → leaves.,leaf → leaves。
+5,wolf,wolves,f → ves,wolf → wolves.,wolf → wolves。
+1,child,children,Irregular,child → children (irregular).,child → children（不规则）。
+1,man,men,Irregular,man → men.,man → men。
+1,woman,women,Irregular,woman → women.,woman → women。
+2,tooth,teeth,Irregular,tooth → teeth.,tooth → teeth。
+2,foot,feet,Irregular,foot → feet.,foot → feet。
+2,mouse,mice,Irregular,mouse → mice.,mouse → mice。
+2,goose,geese,Irregular,goose → geese.,goose → geese。
+3,sheep,sheep,Same form,sheep stays sheep.,sheep 单复数同形。
+3,fish,fish,Same form often,fish is often unchanged in plural.,fish 复数常不变。
+3,person,people,Irregular,person → people.,person → people。
+3,tomato,tomatoes,Add -es,tomato → tomatoes.,tomato → tomatoes。
+4,potato,potatoes,Add -es,potato → potatoes.,potato → potatoes。
+4,hero,heroes,Add -es,hero → heroes.,hero → heroes。
+5,photo,photos,Add -s,photo → photos (exception).,photo → photos（例外加 -s）。
+1,life,lives,f → ves,life → lives.,life → lives。
+1,wife,wives,f → ves,wife → wives.,wife → wives。
+1,story,stories,y → ies,story → stories.,story → stories。
+2,family,families,y → ies,family → families.,family → families。
+2,key,keys,vowel + y,key → keys.,key → keys。
+2,glass,glasses,Add -es,glass → glasses.,glass → glasses。
+2,class,classes,Add -es,class → classes.,class → classes。
+3,watch,watches,Add -es,watch → watches.,watch → watches。
+3,ox,oxen,Irregular,ox → oxen.,ox → oxen。
+3,deer,deer,Same form,deer stays deer.,deer 单复数同形。
+3,potato,potatoes,-o → -oes,Many -o nouns take -es.,许多以 o 结尾加 -es。
+4,party,parties,y → ies,party → parties.,party → parties。

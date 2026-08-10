@@ -1,0 +1,41 @@
+difficulty,base,form,answer,hint,explanation,explanationCN
+1,groß,comparative,größer,Short adjective: -er / am -sten,Short adjectives add -er (comparative) and am …-sten (superlative). groß → größer → am größten.,短形容词比较级加 -er，最高级用 am …-sten。groß → größer → am größten。
+1,klein,comparative,kleiner,-er for comparative,klein → kleiner → am kleinsten.,klein → kleiner → am kleinsten。
+1,alt,superlative,am ältesten,Umlaut in forms,alt → älter → am ältesten (umlaut).,alt → älter → am ältesten（变元音）。
+2,jung,comparative,jünger,Umlaut,jung → jünger → am jüngsten.,jung → jünger → am jüngsten。
+2,lang,comparative,länger,Umlaut,lang → länger → am längsten.,lang → länger → am längsten。
+2,kurz,superlative,am kürzesten,Umlaut,kurz → kürzer → am kürzesten.,kurz → kürzer → am kürzesten。
+2,hoch,comparative,höher,Irregular stem,hoch → höher → am höchsten.,hoch → höher → am höchsten。
+3,gut,comparative,besser,Irregular,gut → besser → am besten (irregular).,gut → besser → am besten（不规则）。
+3,gut,superlative,am besten,Irregular,gut → besser → am besten.,gut → besser → am besten。
+3,viel,comparative,mehr,Irregular,viel → mehr → am meisten.,viel → mehr → am meisten。
+3,gern,comparative,lieber,Irregular adverb/adj,gern → lieber → am liebsten.,gern → lieber → am liebsten。
+4,schön,comparative,schöner,Regular,schön → schöner → am schönsten.,schön → schöner → am schönsten。
+4,schnell,superlative,am schnellsten,Regular,schnell → schneller → am schnellsten.,schnell → schneller → am schnellsten。
+5,langsam,comparative,langsamer,Regular,langsam → langsamer → am langsamsten.,langsam → langsamer → am langsamsten。
+1,kalt,comparative,kälter,Umlaut,kalt → kälter → am kältesten.,kalt → kälter → am kältesten。
+1,warm,superlative,am wärmsten,Umlaut,warm → wärmer → am wärmsten.,warm → wärmer → am wärmsten。
+1,stark,comparative,stärker,Umlaut,stark → stärker → am stärksten.,stark → stärker → am stärksten。
+2,schwach,superlative,am schwächsten,Umlaut,schwach → schwächer → am schwächsten.,schwach → schwächer → am schwächsten。
+2,interessant,comparative,interessanter,Long adjective still -er in German,German uses -er/-sten even for longer adjectives: interessanter.,德语较长形容词也比较级加 -er：interessanter。
+2,wichtig,superlative,am wichtigsten,Regular,wichtig → wichtiger → am wichtigsten.,wichtig → wichtiger → am wichtigsten。
+2,teuer,comparative,teurer,Drop e before -er,teuer → teurer (e drops) → am teuersten.,teuer → teurer（去 e）→ am teuersten。
+3,dunkel,comparative,dunkler,Drop e,dunkel → dunkler → am dunkelsten.,dunkel → dunkler → am dunkelsten。
+3,neu,superlative,am neuesten,Regular,neu → neuer → am neuesten.,neu → neuer → am neuesten。
+3,leicht,comparative,leichter,Regular,leicht → leichter → am leichtesten.,leicht → leichter → am leichtesten。
+3,schwer,superlative,am schwersten,Regular,schwer → schwerer → am schwersten.,schwer → schwerer → am schwersten。
+4,früh,comparative,früher,Regular,früh → früher → am frühesten.,früh → früher → am frühesten。
+4,spät,superlative,am spätesten,Regular,spät → später → am spätesten.,spät → später → am spätesten。
+5,nah,comparative,näher,Irregular-ish,nah → näher → am nächsten.,nah → näher → am nächsten。
+1,oft,comparative,öfter,Adverb forms,oft → öfter (also häufiger).,oft → öfter（也可用 häufiger）。
+1,wenig,superlative,am wenigsten,Regular,wenig → weniger → am wenigsten.,wenig → weniger → am wenigsten。
+1,laut,comparative,lauter,Regular,laut → lauter → am lautesten.,laut → lauter → am lautesten。
+2,leise,superlative,am leisesten,Regular,leise → leiser → am leisesten.,leise → leiser → am leisesten。
+2,sauber,comparative,sauberer,Regular,sauber → sauberer → am saubersten.,sauber → sauberer → am saubersten。
+2,schmutzig,superlative,am schmutzigsten,Regular,schmutzig → schmutziger → am schmutzigsten.,schmutzig → schmutziger → am schmutzigsten。
+2,glücklich,comparative,glücklicher,Regular,glücklich → glücklicher → am glücklichsten.,glücklich → glücklicher → am glücklichsten。
+3,müde,superlative,am müdesten,Regular,müde → müder → am müdesten.,müde → müder → am müdesten。
+3,freundlich,comparative,freundlicher,Regular,freundlich → freundlicher → am freundlichsten.,freundlich → freundlicher → am freundlichsten。
+3,laut,superlative,am lautesten,Regular,laut → lauter → am lautesten.,laut → lauter → am lautesten。
+3,gut,comparative,besser,Irregular comparative of gut,"gut → besser → am besten (irregular).","gut → besser → am besten（不规则）。"
+4,schlecht,comparative,schlechter,Regular,schlecht → schlechter → am schlechtesten.,schlecht → schlechter → am schlechtesten。

@@ -167,6 +167,39 @@ const DE_TOPICS: Topic[] = [
     description:
       "Single-blank drill: conjugate German verbs across Präsens, Präteritum, and Perfekt for a given pronoun.",
   },
+  {
+    id: "de_drill_adjectives",
+    labelDE: "Drill: Adjektive (Komparativ / Superlativ)",
+    labelEN: "Drill: Adjectives (Comparative / Superlative)",
+    category: "grammar",
+    language: "de",
+    difficulty: 2,
+    hidden: true,
+    description:
+      "Fill-in drill: German adjective comparative (größer) and superlative (am größten), including irregular forms (gut/besser/am besten).",
+  },
+  {
+    id: "de_drill_subclauses",
+    labelDE: "Drill: Nebensätze",
+    labelEN: "Drill: Subordinate Clauses",
+    category: "grammar",
+    language: "de",
+    difficulty: 3,
+    hidden: true,
+    description:
+      "Fill-in drill: German subordinate clauses with weil/dass/wenn/ob — conjunction choice or verb-final conjugation.",
+  },
+  {
+    id: "de_drill_prepositions",
+    labelDE: "Drill: Präpositionen",
+    labelEN: "Drill: Prepositions",
+    category: "grammar",
+    language: "de",
+    difficulty: 3,
+    hidden: true,
+    description:
+      "Fill-in drill: German prepositions with cases (Akkusativ/Dativ/Wechselpräpositionen) and common fixed expressions.",
+  },
 ];
 
 const EN_TOPICS: Topic[] = [
@@ -278,6 +311,63 @@ const EN_TOPICS: Topic[] = [
     difficulty: 3,
     description:
       "Short English writing tasks: introduce yourself, describe your day, write about your favorite hobby (2-3 sentences expected for a 5th grader learning English).",
+  },
+
+  // Drills (hidden — surfaced only via the Drills page, not Free Practice)
+  {
+    id: "en_drill_plurals",
+    labelDE: "Drill: Pluralformen",
+    labelEN: "Drill: Plurals",
+    category: "grammar",
+    language: "en",
+    difficulty: 2,
+    hidden: true,
+    description:
+      "Fill-in drill: English regular and irregular noun plurals (cats, children, knives, etc.).",
+  },
+  {
+    id: "en_drill_verbs",
+    labelDE: "Drill: Verbformen",
+    labelEN: "Drill: Verb Forms",
+    category: "grammar",
+    language: "en",
+    difficulty: 2,
+    hidden: true,
+    description:
+      "Fill-in drill: English verb forms — present (3rd person -s), simple past, and past participle for regular and irregular verbs.",
+  },
+  {
+    id: "en_drill_adjectives",
+    labelDE: "Drill: Steigerung (Adjektive)",
+    labelEN: "Drill: Adjectives (Comparative / Superlative)",
+    category: "grammar",
+    language: "en",
+    difficulty: 2,
+    hidden: true,
+    description:
+      "Fill-in drill: English comparative and superlative (-er/-est, more/most, irregular good/better/best).",
+  },
+  {
+    id: "en_drill_subclauses",
+    labelDE: "Drill: Nebensätze (Englisch)",
+    labelEN: "Drill: Subordinate Clauses",
+    category: "grammar",
+    language: "en",
+    difficulty: 3,
+    hidden: true,
+    description:
+      "Fill-in drill: English subordinate clauses with because/when/if/that and simple relative pronouns (who/which/that).",
+  },
+  {
+    id: "en_drill_prepositions",
+    labelDE: "Drill: Präpositionen (Englisch)",
+    labelEN: "Drill: Prepositions",
+    category: "grammar",
+    language: "en",
+    difficulty: 2,
+    hidden: true,
+    description:
+      "Fill-in drill: English prepositions of place/time and common verb/adjective + preposition combinations (interested in, depend on, etc.).",
   },
 ];
 

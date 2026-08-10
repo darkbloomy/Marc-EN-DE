@@ -1,0 +1,61 @@
+difficulty,article,singular,plural,hint
+1,der,Tisch,Tische,
+1,die,Lampe,Lampen,
+1,die,Blume,Blumen,
+1,die,Tür,Türen,
+1,die,Frau,Frauen,
+1,die,Schule,Schulen,
+1,die,Katze,Katzen,
+1,das,Auto,Autos,
+1,der,Park,Parks,
+1,der,Hund,Hunde,
+1,der,Tag,Tage,
+1,die,Tasche,Taschen,
+2,der,Apfel,Äpfel,Plural mit Umlaut
+2,der,Vater,Väter,Plural mit Umlaut
+2,die,Mutter,Mütter,Plural mit Umlaut
+2,der,Bruder,Brüder,Plural mit Umlaut
+2,die,Tochter,Töchter,Plural mit Umlaut
+2,der,Garten,Gärten,Plural mit Umlaut
+2,die,Maus,Mäuse,Umlaut + e
+2,die,Stadt,Städte,Umlaut + e
+2,die,Wand,Wände,Umlaut + e
+2,der,Gast,Gäste,Umlaut + e
+2,der,Zahn,Zähne,Umlaut + e
+2,der,Sohn,Söhne,Umlaut + e
+2,der,Zug,Züge,Umlaut + e
+2,der,Stuhl,Stühle,Umlaut + e
+2,der,Mantel,Mäntel,Plural mit Umlaut
+2,die,Schwester,Schwestern,Plural mit -n
+2,der,Lehrer,Lehrer,Plural ohne Endung
+2,die,Lehrerin,Lehrerinnen,Plural mit -nen
+3,das,Kind,Kinder,Plural mit -er
+3,das,Buch,Bücher,Umlaut + er
+3,das,Haus,Häuser,Umlaut + er
+3,das,Land,Länder,Umlaut + er
+3,das,Wort,Wörter,Umlaut + er
+3,der,Mann,Männer,Umlaut + er
+3,das,Dach,Dächer,Umlaut + er
+3,der,Wald,Wälder,Umlaut + er
+3,das,Glas,Gläser,Umlaut + er
+3,der,Vogel,Vögel,Plural mit Umlaut
+3,der,Junge,Jungen,Plural mit -n
+3,der,Mensch,Menschen,Plural mit -en
+3,die,Zeit,Zeiten,Plural mit -en
+3,die,Uhr,Uhren,Plural mit -en
+3,die,Burg,Burgen,Plural mit -en
+3,das,Bett,Betten,Plural mit -en
+3,das,Hemd,Hemden,Plural mit -en
+3,die,Nacht,Nächte,Umlaut + e
+4,der,Computer,Computer,Plural ohne Endung
+4,die,Mensa,Mensen,Lateinische Form
+4,das,Museum,Museen,Plural mit -een
+4,der,Bus,Busse,Konsonantverdopplung + e
+4,die,Information,Informationen,Plural mit -en
+4,das,Thema,Themen,Plural mit -en
+4,der,Ball,Bälle,Umlaut + e
+4,der,Schüler,Schüler,Plural ohne Endung
+5,das,Forum,Foren,Lateinische Pluralform
+5,das,Visum,Visa,Lateinische Pluralform
+5,der,Atlas,Atlanten,Seltener Plural
+5,das,Konto,Konten,Seltener Plural

@@ -1,0 +1,41 @@
+difficulty,sentence,answer,hint,explanation,explanationCN
+1,Ich gehe ___ die Schule.,zur,zu + der → zur,zu + feminine dative der contracts to zur.,zu + 阴性三格 der 缩合为 zur。
+1,Ich fahre ___ Bahnhof.,zum,zu + dem → zum,zu + masculine/neuter dative dem → zum.,zu + 阳/中性三格 dem → zum。
+1,Das Buch liegt ___ dem Tisch.,auf,Location (wo?),auf + dative for location: auf dem Tisch.,表位置用 auf + 第三格：auf dem Tisch。
+2,Ich lege das Buch ___ den Tisch.,auf,Direction (wohin?),auf + accusative for direction onto: auf den Tisch.,表方向用 auf + 第四格：auf den Tisch。
+2,Wir wohnen ___ Berlin.,in,City with in,Cities take in (+ dative when location).,城市用 in。
+2,Ich komme ___ Deutschland.,aus,Origin,aus = from (origin of a place).,aus 表示来自某处。
+2,Sie spricht ___ ihrer Mutter.,mit,With,mit always takes dative: mit ihrer Mutter.,mit 固定接第三格。
+3,Das Geschenk ist ___ dich.,für,For,für always takes accusative: für dich.,für 固定接第四格。
+3,Wir gehen ___ den Park.,durch,Through,durch always takes accusative.,durch 固定接第四格。
+3,Er steht ___ dem Auto.,neben,Beside,neben + dative for location.,neben 表位置用第三格。
+3,Stell den Stuhl ___ das Sofa.,neben,Beside (direction),neben + accusative for direction.,neben 表方向用第四格。
+4,Ich warte ___ dem Bahnhof.,vor,In front of,vor + dative for location.,vor 表位置用第三格。
+4,Komm ___ die Tür!,vor,In front (direction),vor + accusative for direction.,vor 表方向用第四格。
+5,Die Lampe hängt ___ dem Tisch.,über,Above,über + dative for location.,über 表位置用第三格。
+1,Wir fahren ___ die Brücke.,über,Across,über + accusative for movement across.,über 表越过用第四格。
+1,Der Hund liegt ___ dem Bett.,unter,Under,unter + dative for location.,unter 表位置用第三格。
+1,Kriech ___ den Tisch!,unter,Under (direction),unter + accusative for direction.,unter 表方向用第四格。
+2,Ich sitze ___ meinen Freunden.,zwischen,Between,zwischen + dative for location.,zwischen 表位置用第三格。
+2,Stell dich ___ uns!,zwischen,Between (direction),zwischen + accusative for direction.,zwischen 表方向用第四格。
+2,Das Bild hängt ___ der Wand.,an,On (vertical),an + dative for location on a vertical surface.,an 表垂直表面位置用第三格。
+2,Häng das Bild ___ die Wand.,an,Onto (vertical),an + accusative for direction onto a wall.,an 表挂到墙上用第四格。
+3,Ich gehe ___ Hause.,nach,Home,nach Hause is a fixed expression.,nach Hause 是固定搭配。
+3,Wir fliegen ___ Italien.,nach,To a country,nach + country/city (no article) for going to.,去国家/城市（无冠词）用 nach。
+3,Er kommt ___ dem Urlaub.,aus,Out of / from,aus dem Urlaub = back from holiday.,aus dem Urlaub = 度假归来。
+3,Ich lerne Deutsch ___ einem Jahr.,seit,seit + Dativ,seit takes dative and marks a starting point in time.,seit 接第三格，表示自从。
+4,Ich bleibe ___ Freitag.,bis,Until,bis often with time; no article needed here.,bis 表示直到。
+4,Ich gehe ___ Jacke nach draußen.,ohne,ohne + Akkusativ,ohne always takes accusative: ohne Jacke.,ohne 固定接第四格。
+5,Der Ball flog ___ die Wand.,gegen,gegen + Akkusativ,gegen always takes accusative.,gegen 固定接第四格。
+1,Die Schule beginnt ___ acht Uhr.,um,Clock time,um for clock times: um acht Uhr.,钟点用 um：um acht Uhr。
+1,Ich bin ___ meiner Oma.,bei,At someone's,bei + dative for being at someone's place.,bei + 第三格表示在某人家。
+1,Wir treffen uns ___ dem Café.,vor,In front of,"vor dem Café (location, dative).",vor dem Café（位置，第三格）。
+2,Das Kind versteckt sich ___ dem Schrank.,hinter,Behind,hinter + dative for location.,hinter 表位置用第三格。
+2,Lauf ___ das Haus!,hinter,Behind (direction),hinter + accusative for direction.,hinter 表方向用第四格。
+2,Ich denke oft ___ dich.,an,Think of,denken an + accusative.,denken an + 第四格。
+2,Sie interessiert sich ___ Musik.,für,Interested in,sich interessieren für + accusative.,sich interessieren für + 第四格。
+3,Er wartet ___ den Bus.,auf,Wait for,warten auf + accusative.,warten auf + 第四格。
+3,Ich freue mich ___ das Fest.,auf,Look forward to,sich freuen auf + accusative (future).,sich freuen auf + 第四格（期待未来）。
+3,Wir sprechen ___ das Problem.,über,About,sprechen über + accusative.,sprechen über + 第四格。
+3,Hilfst du mir ___ meinen Hausaufgaben?,bei,Help with,helfen bei + dative.,helfen bei + 第三格。
+4,Ich gehe ___ dem Regen nicht spazieren.,bei,In weather,bei dem Regen / bei Regen.,bei 也可表示在某种天气下。

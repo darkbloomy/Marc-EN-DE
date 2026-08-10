@@ -1,0 +1,10 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npx tsx *)",
+      "Bash(npm test *)",
+      "Bash(python3 -c \"import sys, json; d = json.load\\(sys.stdin\\); ex = d['data']['exercises']; print\\(f'count: {len\\(ex\\)}'\\); print\\(f'topics: {set\\(e[\\\\\"topic\\\\\"] for e in ex\\)}'\\); from collections import Counter; print\\('per-topic:', Counter\\(e['topic'] for e in ex\\)\\)\")",
+      "Bash(node -e ' *)"
+    ]
+  }
+}

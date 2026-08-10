@@ -3,8 +3,13 @@
 import { useState } from "react";
 import { useProfile } from "@/contexts/ProfileContext";
 import type { GeneratedExercise, Language } from "@/lib/exercises/types";
+import {
+  getExerciseQuestionText,
+  hashExerciseContent,
+} from "@/lib/exercises/content-hash";
 import { getTopicsByLanguage, type Topic } from "@/lib/exercises/topics";
 import { ExerciseRenderer } from "@/components/exercises/ExerciseRenderer";
+import { ExerciseSheetActions } from "@/components/ExerciseSheetActions";
 import { SessionSummary } from "@/components/SessionSummary";
 import { ArrowLeft, Loader2 } from "lucide-react";
 
@@ -104,12 +109,15 @@ export default function FreePracticePage() {
             category: ex.category,
             topic: ex.topic,
             exerciseType: ex.exercise.type,
-            question: "question" in ex.exercise ? ex.exercise.question : ex.exercise.type,
+            question: getExerciseQuestionText(ex.exercise),
             userAnswer: result.userAnswer,
             correctAnswer: getCorrectAnswer(ex),
             isCorrect: result.isCorrect,
             pointsEarned: result.pointsEarned,
             timeSpentSec: 0,
+            source: ex.source ?? "unknown",
+            exerciseId: ex.poolId ?? null,
+            contentHash: ex.contentHash ?? hashExerciseContent(ex.exercise),
           }),
         });
       }
@@ -235,9 +243,18 @@ export default function FreePracticePage() {
     );
   }
 
+  const sheetTitle =
+    language === "de" ? "Free Practice — German" : "Free Practice — English";
+
   if (stage === "practicing") {
     return (
-      <div className="max-w-2xl mx-auto py-4">
+      <div className="max-w-2xl mx-auto py-4 space-y-4">
+        <ExerciseSheetActions
+          exercises={exercises}
+          language={language}
+          title={sheetTitle}
+          mode="free"
+        />
         <ExerciseRenderer exercises={exercises} onComplete={handleComplete} />
       </div>
     );
@@ -245,8 +262,18 @@ export default function FreePracticePage() {
 
   // summary
   return (
-    <div className="py-8">
-      <SessionSummary results={results} onPracticeAgain={handlePracticeAgain} />
+    <div className="py-8 space-y-4 max-w-2xl mx-auto">
+      <ExerciseSheetActions
+        exercises={exercises}
+        language={language}
+        title={sheetTitle}
+        mode="free"
+      />
+      <SessionSummary
+        results={results}
+        sources={exercises.map((e) => e.source)}
+        onPracticeAgain={handlePracticeAgain}
+      />
     </div>
   );
 }
