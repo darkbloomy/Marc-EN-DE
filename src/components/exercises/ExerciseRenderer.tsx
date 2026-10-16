@@ -77,6 +77,7 @@ export function ExerciseRenderer({
     <ExerciseShell
       currentIndex={currentIndex}
       totalCount={exercises.length}
+      language={current.language}
     >
       <ExerciseContent
         key={currentIndex}

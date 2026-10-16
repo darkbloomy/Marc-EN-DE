@@ -1,5 +1,9 @@
 import { describe, it, expect } from "vitest";
-import { getExerciseQuestionText, hashExerciseContent } from "./content-hash";
+import {
+  getExerciseCorrectAnswer,
+  getExerciseQuestionText,
+  hashExerciseContent,
+} from "./content-hash";
 
 describe("content-hash", () => {
   it("extracts stems for each exercise type", () => {
@@ -20,6 +24,27 @@ describe("content-hash", () => {
         explanation: "e",
       }),
     ).toBe("I ___ home.");
+  });
+
+  it("extracts the canonical correct answer", () => {
+    expect(
+      getExerciseCorrectAnswer({
+        type: "multiple_choice",
+        question: "Q?",
+        options: ["A", "B", "C", "D"],
+        correctIndex: 2,
+        explanation: "e",
+      }),
+    ).toBe("C");
+    expect(
+      getExerciseCorrectAnswer({
+        type: "fill_in_the_blank",
+        sentence: "Singular: ___ Hund. Plural: die ___",
+        correctAnswer: "der",
+        blanks: [{ correctAnswer: "der" }, { correctAnswer: "Hunde" }],
+        explanation: "e",
+      }),
+    ).toBe("der | Hunde");
   });
 
   it("produces stable hashes for the same stem", () => {

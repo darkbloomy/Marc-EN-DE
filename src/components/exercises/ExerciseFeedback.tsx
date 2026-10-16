@@ -53,7 +53,9 @@ export function ExerciseFeedback({
         </p>
       )}
 
-      <p className="text-sm text-gray-700">{explanation}</p>
+      <p className="text-sm text-gray-700" data-lookup-lang="en">
+        {explanation}
+      </p>
 
       {!isCorrect && explanationCN && (
         <p className="text-sm text-gray-600 mt-2 pt-2 border-t border-red-100">

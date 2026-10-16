@@ -98,6 +98,13 @@ describe("buildExerciseSheetHtml", () => {
     expect(html).toContain("Describe your pet in 2 sentences.");
   });
 
+  it("does not print hints under worksheet questions", () => {
+    const worksheet = html.split("Answer Key")[0];
+    expect(worksheet).not.toContain("Hint:");
+    expect(worksheet).not.toContain("movement verb");
+    expect(html).not.toMatch(/class="hint"/);
+  });
+
   it("lists MC options on the worksheet without marking the correct one", () => {
     const worksheet = html.split("Answer Key")[0];
     expect(worksheet).toContain("Der");

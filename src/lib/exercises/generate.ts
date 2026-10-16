@@ -1,4 +1,4 @@
-import { getAnthropicClient, AI_MODEL, MAX_TOKENS } from "@/lib/ai";
+import { completeText } from "@/lib/ai";
 import { prisma } from "@/lib/prisma";
 import type {
   Exercise,
@@ -13,6 +13,12 @@ import { getFallbackExercises } from "./fallbacks";
 import { getCached, setCache } from "./cache";
 import { hashExerciseContent } from "./content-hash";
 import { getRecentExerciseKeys } from "./recent";
+import { pickDiverseFromPool } from "./pool-pick";
+import { answersOf } from "./drill-format";
+
+// Grok at its default (high) reasoning effort takes ~50s per batch; a kid is
+// waiting on a spinner, so keep it low and let slow providers time out.
+const GENERATION_SPEED = { reasoningEffort: "low", timeoutMs: 45_000 } as const;
 
 function parseExerciseResponse(text: string, count: number): Exercise[] {
   let cleaned = text.trim();
@@ -31,18 +37,10 @@ function parseExerciseResponse(text: string, count: number): Exercise[] {
   return parsed as Exercise[];
 }
 
-function shuffle<T>(arr: T[]): T[] {
-  const out = [...arr];
-  for (let i = out.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [out[i], out[j]] = [out[j], out[i]];
-  }
-  return out;
-}
-
 interface PoolRow {
   id: string;
   payload: string;
+  difficulty?: number;
 }
 
 function excludeWhere(excludePoolIds: string[]) {
@@ -58,7 +56,7 @@ async function queryPool(
 ): Promise<PoolRow[]> {
   return prisma.exercise.findMany({
     where: { ...base, ...excludeWhere(excludePoolIds) },
-    select: { id: true, payload: true },
+    select: { id: true, payload: true, difficulty: true },
     take,
   });
 }
@@ -78,6 +76,22 @@ async function findFromPool(
     exerciseType,
     reviewStatus: "approved",
   };
+
+  // Drills: pull the whole topic so sessions are not stuck in one
+  // difficulty band of near-identical "if / wenn / Das ist der …" frames.
+  if (isDrillTopic(topic.id)) {
+    const take = Math.max(400, count * 10);
+    const preferred = await queryPool(base, take, excludePoolIds);
+    if (preferred.length >= count) {
+      return { rows: preferred, widened: false };
+    }
+    if (excludePoolIds.length > 0) {
+      const all = await queryPool(base, take, []);
+      if (all.length >= count) return { rows: all, widened: true };
+      if (all.length > 0) return { rows: all, widened: true };
+    }
+    if (preferred.length > 0) return { rows: preferred, widened: true };
+  }
 
   async function attempt(ids: string[]): Promise<{
     rows: PoolRow[];
@@ -157,23 +171,12 @@ async function generateFromAI(
     avoidStems,
   );
 
-  const response = await getAnthropicClient().messages.create({
-    model: AI_MODEL,
-    max_tokens: MAX_TOKENS,
+  const { text } = await completeText({
     system: SYSTEM_PROMPT,
     messages: [{ role: "user", content: prompt }],
     temperature: 0.9,
+    ...GENERATION_SPEED,
   });
-
-  const textBlock = response.content.find((block) => block.type === "text");
-  if (!textBlock || textBlock.type !== "text") {
-    throw new Error("No text response from AI");
-  }
-
-  const text = textBlock.text;
-  if (!text) {
-    throw new Error("No text response from AI");
-  }
 
   let exercises = parseExerciseResponse(text, count);
   const excludeSet = new Set(excludeHashes);
@@ -209,26 +212,19 @@ async function generateFromAI(
           ),
         ],
       );
-      const refill = await getAnthropicClient().messages.create({
-        model: AI_MODEL,
-        max_tokens: MAX_TOKENS,
+      const refill = await completeText({
         system: SYSTEM_PROMPT,
         messages: [{ role: "user", content: refillPrompt }],
         temperature: 0.95,
+        ...GENERATION_SPEED,
       });
-      const refillText = refill.content.find((b) => b.type === "text");
-      if (refillText && refillText.type === "text" && refillText.text) {
-        const more = parseExerciseResponse(
-          refillText.text,
-          count - exercises.length,
-        );
-        for (const ex of more) {
-          const h = hashExerciseContent(ex);
-          if (excludeSet.has(h) || seenInBatch.has(h)) continue;
-          seenInBatch.add(h);
-          exercises.push(ex);
-          if (exercises.length >= count) break;
-        }
+      const more = parseExerciseResponse(refill.text, count - exercises.length);
+      for (const ex of more) {
+        const h = hashExerciseContent(ex);
+        if (excludeSet.has(h) || seenInBatch.has(h)) continue;
+        seenInBatch.add(h);
+        exercises.push(ex);
+        if (exercises.length >= count) break;
       }
     } catch {
       // keep partial set
@@ -437,29 +433,34 @@ async function getPoolOrFallbackBatch(
     }
 
     const excludeHashSet = new Set(excludeHashes);
-    const shuffled = shuffle(rows);
-    const picked: PoolRow[] = [];
-    const deferred: PoolRow[] = [];
-
-    for (const row of shuffled) {
+    const unseen: PoolRow[] = [];
+    const seen: PoolRow[] = [];
+    for (const row of rows) {
       try {
         const exercise = JSON.parse(row.payload) as Exercise;
         const h = hashExerciseContent(exercise);
-        if (excludeHashSet.has(h) && picked.length + deferred.length < rows.length) {
-          deferred.push(row);
-          continue;
-        }
-        picked.push(row);
-        if (picked.length >= count) break;
+        if (excludeHashSet.has(h)) seen.push(row);
+        else unseen.push(row);
       } catch {
         continue;
       }
     }
-    // Fill from deferred (recently seen) only if needed
-    for (const row of deferred) {
-      if (picked.length >= count) break;
-      picked.push(row);
-    }
+    const diverseUnseen = pickDiverseFromPool(
+      unseen,
+      count,
+      difficulty ?? topic.difficulty,
+    );
+    const picked: PoolRow[] =
+      diverseUnseen.length >= count
+        ? diverseUnseen
+        : [
+            ...diverseUnseen,
+            ...pickDiverseFromPool(
+              seen,
+              count - diverseUnseen.length,
+              difficulty ?? topic.difficulty,
+            ),
+          ];
 
     if (picked.length === 0) {
       return allowFallback
@@ -473,12 +474,24 @@ async function getPoolOrFallbackBatch(
       return toGenerated(exercise, topic, effectiveDifficulty, "db", row.id);
     });
 
+    const bank: string[] = [];
+    if (isDrillTopic(topic.id)) {
+      for (const row of rows) {
+        try {
+          bank.push(...answersOf(JSON.parse(row.payload) as Exercise));
+        } catch {
+          continue;
+        }
+      }
+    }
+
     return {
       exercises: generated,
       language: topic.language,
       topic: topic.id,
       generatedAt: new Date().toISOString(),
       source: "db",
+      distractorBank: bank.length > 0 ? bank : undefined,
     };
   } catch (error) {
     console.error("Exercise pool query failed, using hardcoded fallback:", error);

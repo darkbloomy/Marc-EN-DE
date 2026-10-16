@@ -13,15 +13,26 @@ const DE_DRILL_TOPICS = new Set([
   "de_drill_nouns",
   "de_drill_verbs",
   "de_drill_adjectives",
-  "de_drill_subclauses",
   "de_drill_prepositions",
+  "de_drill_relative",
+  "de_drill_adverbial",
+  "de_drill_complement",
+  "de_drill_infinitive",
+  "de_drill_extras",
+  // purged (split into adverbial + complement + relative + infinitive)
+  "de_drill_subclauses",
 ]);
 const EN_DRILL_TOPICS = new Set([
   "en_drill_plurals",
   "en_drill_verbs",
   "en_drill_adjectives",
-  "en_drill_subclauses",
   "en_drill_prepositions",
+  "en_drill_relative",
+  "en_drill_adverbial",
+  "en_drill_complement",
+  "en_drill_infinitive",
+  "en_drill_extras",
+  "en_drill_subclauses",
 ]);
 
 interface ExerciseRow {
@@ -203,30 +214,18 @@ function buildDeAdjectives(): ExerciseRow[] {
   });
 }
 
-function buildDeSubclauses(): ExerciseRow[] {
-  const rows = parseCsv(join(SOURCES, "drill-de-subclauses.csv"));
-  const seqByDiff = seqMap();
-  return rows.map((r) => {
-    const difficulty = Number(r.difficulty);
-    const seq = nextSeq(seqByDiff, difficulty);
-    const payload: Record<string, unknown> = {
-      type: "fill_in_the_blank",
-      sentence: r.sentence,
-      correctAnswer: r.answer,
-      acceptableAnswers: [r.answer.toLowerCase(), r.answer],
-      explanation: r.explanation,
-      explanationCN: r.explanationCN,
-    };
-    if (r.hint) payload.hint = r.hint;
-    return wrap(
-      "de",
-      "de_drill_subclauses",
-      "subclauses",
-      difficulty,
-      seq,
-      payload,
-    );
-  });
+function uniqueAcceptable(primary: string, alts: string[]): string[] {
+  const out: string[] = [];
+  const seen = new Set<string>();
+  for (const raw of [primary, ...alts]) {
+    for (const v of [raw, raw.toLowerCase()]) {
+      const item = v.trim();
+      if (!item || seen.has(item)) continue;
+      seen.add(item);
+      out.push(item);
+    }
+  }
+  return out;
 }
 
 function buildEnPlurals(): ExerciseRow[] {
@@ -290,32 +289,6 @@ function buildEnAdjectives(): ExerciseRow[] {
   });
 }
 
-function buildEnSubclauses(): ExerciseRow[] {
-  const rows = parseCsv(join(SOURCES, "drill-en-subclauses.csv"));
-  const seqByDiff = seqMap();
-  return rows.map((r) => {
-    const difficulty = Number(r.difficulty);
-    const seq = nextSeq(seqByDiff, difficulty);
-    const payload: Record<string, unknown> = {
-      type: "fill_in_the_blank",
-      sentence: r.sentence,
-      correctAnswer: r.answer,
-      acceptableAnswers: [r.answer.toLowerCase(), r.answer],
-      explanation: r.explanation,
-      explanationCN: r.explanationCN,
-    };
-    if (r.hint) payload.hint = r.hint;
-    return wrap(
-      "en",
-      "en_drill_subclauses",
-      "subclauses",
-      difficulty,
-      seq,
-      payload,
-    );
-  });
-}
-
 function buildSentenceDrill(
   language: string,
   topic: string,
@@ -327,14 +300,32 @@ function buildSentenceDrill(
   return rows.map((r) => {
     const difficulty = Number(r.difficulty);
     const seq = nextSeq(seqByDiff, difficulty);
+    const answers = r.answer.split("|").map((s) => s.trim()).filter(Boolean);
+    const alts = (r.alt ?? "")
+      .split("|")
+      .map((s) => s.trim())
+      .filter(Boolean);
+    const blankCount = (r.sentence.match(/___/g) ?? []).length;
     const payload: Record<string, unknown> = {
       type: "fill_in_the_blank",
       sentence: r.sentence,
-      correctAnswer: r.answer,
-      acceptableAnswers: [r.answer.toLowerCase(), r.answer],
       explanation: r.explanation,
       explanationCN: r.explanationCN,
     };
+    if (blankCount > 1 && answers.length === blankCount) {
+      payload.blanks = answers.map((ans, i) => ({
+        correctAnswer: ans,
+        acceptableAnswers: uniqueAcceptable(ans, alts[i] ? [alts[i]] : []),
+      }));
+      payload.correctAnswer = answers[0];
+      payload.acceptableAnswers = uniqueAcceptable(
+        answers[0],
+        alts[0] ? [alts[0]] : [],
+      );
+    } else {
+      payload.correctAnswer = r.answer;
+      payload.acceptableAnswers = uniqueAcceptable(r.answer, alts);
+    }
     if (r.hint) payload.hint = r.hint;
     return wrap(language, topic, slug, difficulty, seq, payload);
   });
@@ -363,12 +354,41 @@ function main(): void {
     ...buildDeNouns(),
     ...buildDeVerbs(),
     ...buildDeAdjectives(),
-    ...buildDeSubclauses(),
     ...buildSentenceDrill(
       "de",
       "de_drill_prepositions",
       "prepositions",
       "drill-de-prepositions.csv",
+    ),
+    ...buildSentenceDrill(
+      "de",
+      "de_drill_relative",
+      "relative",
+      "drill-de-relative.csv",
+    ),
+    ...buildSentenceDrill(
+      "de",
+      "de_drill_adverbial",
+      "adverbial",
+      "drill-de-adverbial.csv",
+    ),
+    ...buildSentenceDrill(
+      "de",
+      "de_drill_complement",
+      "complement",
+      "drill-de-complement.csv",
+    ),
+    ...buildSentenceDrill(
+      "de",
+      "de_drill_infinitive",
+      "infinitive",
+      "drill-de-infinitive.csv",
+    ),
+    ...buildSentenceDrill(
+      "de",
+      "de_drill_extras",
+      "extras",
+      "drill-de-extras.csv",
     ),
   ];
   mergeInto(DE_TARGET, DE_DRILL_TOPICS, deRows, "de.json");
@@ -377,12 +397,41 @@ function main(): void {
     ...buildEnPlurals(),
     ...buildEnVerbs(),
     ...buildEnAdjectives(),
-    ...buildEnSubclauses(),
     ...buildSentenceDrill(
       "en",
       "en_drill_prepositions",
       "prepositions",
       "drill-en-prepositions.csv",
+    ),
+    ...buildSentenceDrill(
+      "en",
+      "en_drill_relative",
+      "relative",
+      "drill-en-relative.csv",
+    ),
+    ...buildSentenceDrill(
+      "en",
+      "en_drill_adverbial",
+      "adverbial",
+      "drill-en-adverbial.csv",
+    ),
+    ...buildSentenceDrill(
+      "en",
+      "en_drill_complement",
+      "complement",
+      "drill-en-complement.csv",
+    ),
+    ...buildSentenceDrill(
+      "en",
+      "en_drill_infinitive",
+      "infinitive",
+      "drill-en-infinitive.csv",
+    ),
+    ...buildSentenceDrill(
+      "en",
+      "en_drill_extras",
+      "extras",
+      "drill-en-extras.csv",
     ),
   ];
   mergeInto(EN_TARGET, EN_DRILL_TOPICS, enRows, "en.json");

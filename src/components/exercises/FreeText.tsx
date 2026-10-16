@@ -42,14 +42,14 @@ export function FreeText({
       {answered && (
         <div className="mt-4 space-y-3">
           <div className="bg-blue-50 rounded-xl p-4 border border-blue-200">
-            <h3 className="font-semibold text-blue-800 mb-2">
+            <h3 className="font-semibold text-blue-800 mb-2" data-no-lookup>
               Sample Answer:
             </h3>
             <p className="text-blue-700">{exercise.sampleAnswer}</p>
           </div>
 
           <div className="bg-gray-50 rounded-xl p-4 border border-gray-200">
-            <h3 className="font-semibold text-gray-700 mb-2">
+            <h3 className="font-semibold text-gray-700 mb-2" data-no-lookup>
               Check your answer for:
             </h3>
             <ul className="space-y-1">

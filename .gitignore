@@ -49,3 +49,4 @@ dev.db-journal
 /test-results/
 
 /src/generated/prisma
+.gstack/

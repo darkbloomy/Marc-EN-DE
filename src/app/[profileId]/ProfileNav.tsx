@@ -1,9 +1,11 @@
 "use client";
 
 import Link from "next/link";
+import { useState } from "react";
 import { usePathname } from "next/navigation";
 import { useProfile } from "@/contexts/ProfileContext";
-import { Home, BookOpen, BarChart3, Award, PencilRuler } from "lucide-react";
+import { Home, BookOpen, BarChart3, Award, PencilRuler, Sparkles } from "lucide-react";
+import { AiChatModal } from "@/components/AiChatModal";
 
 const NAV_ITEMS = [
   { label: "Home", icon: Home, path: "" },
@@ -20,6 +22,7 @@ export function ProfileNav({
 }) {
   const profile = useProfile();
   const pathname = usePathname();
+  const [chatOpen, setChatOpen] = useState(false);
 
   const isHorizontal = orientation === "horizontal";
 
@@ -63,6 +66,21 @@ export function ProfileNav({
           </Link>
         );
       })}
+      <button
+        type="button"
+        onClick={() => setChatOpen(true)}
+        title="Ask the AI tutor"
+        aria-label="Ask the AI tutor"
+        className={`flex items-center gap-3 rounded-xl transition-colors text-violet-600 ${
+          isHorizontal
+            ? "flex-col gap-1 px-3 py-2 text-xs min-w-[60px] hover:text-violet-700"
+            : "px-4 py-3 bg-violet-50 hover:bg-violet-100"
+        }`}
+      >
+        <Sparkles size={isHorizontal ? 22 : 20} />
+        <span className={isHorizontal ? "" : "font-medium"}>AI Tutor</span>
+      </button>
+      <AiChatModal open={chatOpen} onClose={() => setChatOpen(false)} />
     </nav>
   );
 }

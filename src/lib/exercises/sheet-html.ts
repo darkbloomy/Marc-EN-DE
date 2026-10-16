@@ -67,9 +67,6 @@ function renderWorksheetItem(ex: Exercise, index: number): string {
     case "fill_in_the_blank":
       body = `<p class="prompt fill">${escapeHtml(ex.sentence)}</p>
 <p class="answer-line">Answer: _______________________________</p>`;
-      if (ex.hint) {
-        body += `<p class="hint">Hint: ${escapeHtml(ex.hint)}</p>`;
-      }
       break;
     case "true_false":
       body = `<p class="prompt">${escapeHtml(ex.statement)}</p>
@@ -132,7 +129,6 @@ const SHEET_CSS = `
   .options li { margin: 0.2rem 0; list-style: none; }
   .opt-letter { font-weight: 700; margin-right: 0.35rem; }
   .answer-line, .tf { margin: 0.5rem 0 0; color: #333; }
-  .hint { font-size: 0.9rem; color: #555; font-style: italic; margin: 0.35rem 0 0; }
   .scrambled { margin: 0.35rem 0; }
   .ruled { margin-top: 0.6rem; }
   .rule {

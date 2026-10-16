@@ -43,7 +43,7 @@ export function TrueFalse({
 
   return (
     <div>
-      <h2 className="text-lg font-semibold text-gray-800 mb-6">
+      <h2 className="text-lg font-semibold text-gray-800 mb-6" data-no-lookup>
         Is this statement true or false?
       </h2>
 

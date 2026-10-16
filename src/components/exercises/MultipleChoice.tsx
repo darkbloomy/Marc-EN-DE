@@ -56,6 +56,7 @@ export function MultipleChoice({
           return (
             <button
               key={index}
+              data-lookup
               onClick={() => !answered && !disabled && setSelectedIndex(index)}
               disabled={answered || disabled}
               className={`w-full text-left px-4 py-3 rounded-xl border-2 transition-all min-h-[48px] ${buttonStyle}`}

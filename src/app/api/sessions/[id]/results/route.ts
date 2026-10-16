@@ -23,6 +23,7 @@ const exerciseResultSchema = z.object({
   source: z.string().optional().default("unknown"),
   exerciseId: z.string().optional().nullable(),
   contentHash: z.string().optional().nullable(),
+  exercisePayload: z.string().max(10_000).optional().nullable(),
 });
 
 export async function POST(

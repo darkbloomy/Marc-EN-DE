@@ -3,8 +3,24 @@ import type {
   GeneratedExercise,
   Language,
 } from "@/lib/exercises/types";
+import { isDrillTopic } from "@/lib/exercises/types";
 import { getTopic, getTopicsByLanguage, type Topic } from "@/lib/exercises/topics";
 import { generateExercises } from "@/lib/exercises/generate";
+import { answersOf, applyRandomDrillFormat } from "@/lib/exercises/drill-format";
+import {
+  DRILL_CATEGORY_KEYS,
+  emptyDrillCounts,
+  type DrillCategoryKey,
+  type DrillCounts,
+} from "@/lib/sessions/drill-categories";
+
+export {
+  DRILL_CATEGORY_KEYS,
+  emptyDrillCounts,
+  sumDrillCounts,
+  type DrillCategoryKey,
+  type DrillCounts,
+} from "@/lib/sessions/drill-categories";
 
 const DAILY_EXERCISE_COUNT = 15;
 const TOPICS_PER_DAILY = 3;
@@ -27,41 +43,30 @@ const FREE_TYPE_PLAN: Record<ExerciseType, number> = {
   free_text: 1,
 };
 
-export const DRILL_CATEGORY_KEYS = [
-  "nouns",
-  "verbs",
-  "adjectives",
-  "subclauses",
-  "prepositions",
-] as const;
-
-export type DrillCategoryKey = (typeof DRILL_CATEGORY_KEYS)[number];
-
-export interface DrillCounts {
-  /** DE: nouns (Artikel+Plural); EN: plurals */
-  nouns: number;
-  verbs: number;
-  adjectives: number;
-  subclauses: number;
-  prepositions: number;
-}
-
 function drillTopicMap(language: Language): Record<DrillCategoryKey, string> {
   if (language === "de") {
     return {
       nouns: "de_drill_nouns",
       verbs: "de_drill_verbs",
       adjectives: "de_drill_adjectives",
-      subclauses: "de_drill_subclauses",
       prepositions: "de_drill_prepositions",
+      relative: "de_drill_relative",
+      adverbial: "de_drill_adverbial",
+      complement: "de_drill_complement",
+      infinitive: "de_drill_infinitive",
+      extras: "de_drill_extras",
     };
   }
   return {
     nouns: "en_drill_plurals",
     verbs: "en_drill_verbs",
     adjectives: "en_drill_adjectives",
-    subclauses: "en_drill_subclauses",
     prepositions: "en_drill_prepositions",
+    relative: "en_drill_relative",
+    adverbial: "en_drill_adverbial",
+    complement: "en_drill_complement",
+    infinitive: "en_drill_infinitive",
+    extras: "en_drill_extras",
   };
 }
 
@@ -80,13 +85,7 @@ function shuffleArray<T>(arr: T[]): T[] {
  * but not identical every time.
  */
 export function distributeDrillMix(total: number): DrillCounts {
-  const counts: DrillCounts = {
-    nouns: 0,
-    verbs: 0,
-    adjectives: 0,
-    subclauses: 0,
-    prepositions: 0,
-  };
+  const counts = emptyDrillCounts();
   if (total <= 0) return counts;
 
   const cats = [...DRILL_CATEGORY_KEYS];
@@ -168,9 +167,11 @@ export async function buildDrillsSession(opts: {
   counts: DrillCounts;
   difficulty?: number;
   profileId?: string;
+  /** 0 = all fill-in, 100 = all multiple choice. Default 50. */
+  choicePercent?: number;
 }): Promise<GeneratedExercise[]> {
   const topics = drillTopicMap(opts.language);
-  const calls: Promise<{ exercises: GeneratedExercise[] }>[] = [];
+  const calls: Promise<Awaited<ReturnType<typeof generateExercises>>>[] = [];
 
   for (const key of DRILL_CATEGORY_KEYS) {
     const count = opts.counts[key] ?? 0;
@@ -190,5 +191,129 @@ export async function buildDrillsSession(opts: {
   if (calls.length === 0) return [];
 
   const batches = await Promise.all(calls);
-  return shuffleArray(batches.flatMap((b) => b.exercises));
+  const exercises = shuffleArray(batches.flatMap((b) => b.exercises));
+
+  const bankByTopic: Record<string, string[]> = {};
+  for (const batch of batches) {
+    const extra =
+      batch.distractorBank && batch.distractorBank.length > 0
+        ? batch.distractorBank
+        : batch.exercises.flatMap((e) => answersOf(e.exercise));
+    bankByTopic[batch.topic] = [
+      ...(bankByTopic[batch.topic] ?? []),
+      ...extra,
+    ];
+  }
+
+  return applyRandomDrillFormat(
+    exercises,
+    (item) => bankByTopic[item.topic] ?? [],
+    Math.random,
+    opts.choicePercent ?? 50,
+  );
+}
+
+/**
+ * One requested topic slice of a custom (AI-proposed) session.
+ */
+export interface CustomPlanItem {
+  topicId: string;
+  count: number;
+}
+
+/**
+ * Build a session from an arbitrary plan of (topic, count) pairs proposed by
+ * the AI tutor. Regular topics get a mixed-type distribution scaled to the
+ * requested count; drill topics follow the pool-first fill-in drill path
+ * (with random multiple-choice formatting).
+ */
+export async function buildCustomSession(opts: {
+  plan: CustomPlanItem[];
+  difficulty?: number;
+  profileId?: string;
+}): Promise<GeneratedExercise[]> {
+  const batches: GeneratedExercise[][] = [];
+  const bankByTopic: Record<string, string[]> = {};
+
+  for (const item of opts.plan) {
+    const { topicId, count } = item;
+    if (count <= 0) continue;
+    const topic = getTopic(topicId);
+    if (!topic) throw new Error(`Unknown topic: ${topicId}`);
+
+    if (isDrillTopic(topic.id)) {
+      const batch = await generateExercises({
+        topicId,
+        exerciseType: "fill_in_the_blank",
+        count,
+        difficulty: opts.difficulty,
+        profileId: opts.profileId,
+        preferPool: true,
+      });
+      batches.push(batch.exercises);
+      const extra =
+        batch.distractorBank && batch.distractorBank.length > 0
+          ? batch.distractorBank
+          : batch.exercises.flatMap((e) => answersOf(e.exercise));
+      bankByTopic[topic.id] = extra;
+      continue;
+    }
+
+    const plan = scaleTypePlan(count);
+    const generated = await generateForPlan(
+      topic,
+      plan,
+      opts.difficulty,
+      opts.profileId,
+    );
+    batches.push(generated);
+  }
+
+  const all = batches.flat();
+  return applyRandomDrillFormat(
+    all,
+    (item) => bankByTopic[item.topic] ?? [],
+    Math.random,
+    50,
+  );
+}
+
+/**
+ * Distribute `count` across the five exercise types in the same proportions
+ * as free practice (3 MC / 2 fill / 2 T-F / 2 reorder / 1 free), rounding
+ * so the parts always sum to `count`.
+ */
+export function scaleTypePlan(count: number): Record<ExerciseType, number> {
+  const weights: Record<ExerciseType, number> = {
+    multiple_choice: 3,
+    fill_in_the_blank: 2,
+    true_false: 2,
+    reorder: 2,
+    free_text: 1,
+  };
+  const totalWeight = (Object.values(weights) as number[]).reduce(
+    (a, b) => a + b,
+    0,
+  );
+
+  const plan = {} as Record<ExerciseType, number>;
+  let assigned = 0;
+  const entries = (Object.entries(weights) as [ExerciseType, number][]);
+  const fractional = entries.map(([type, w]) => {
+    const exact = (w / totalWeight) * count;
+    const base = Math.floor(exact);
+    plan[type] = base;
+    assigned += base;
+    return { type, remainder: exact - base };
+  });
+
+  // Hand out the leftover seats to the largest fractional remainders.
+  const byRemainder = [...fractional].sort((a, b) => b.remainder - a.remainder);
+  let i = 0;
+  while (assigned < count) {
+    plan[byRemainder[i % byRemainder.length].type] += 1;
+    assigned += 1;
+    i += 1;
+  }
+  return plan;
 }

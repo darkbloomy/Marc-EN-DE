@@ -54,6 +54,7 @@ model ExerciseResult {
   source        String   @default("unknown") // provenance: "ai" | "db" | "fallback" | "unknown"
   exerciseId    String? // pool Exercise.id when source is "db"
   contentHash   String? // stable hash of type + stem for anti-repeat
+  exercisePayload String? // full exercise JSON (options, blanks, ...) for pool-save + tutor context
   createdAt     DateTime @default(now())
 
   session Session @relation(fields: [sessionId], references: [id], onDelete: Cascade)

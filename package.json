@@ -13,7 +13,8 @@
     "seed:achievements": "tsx prisma/seed-achievements.ts",
     "seed:exercises": "tsx prisma/seed-exercises.ts",
     "seed:build:drills": "tsx scripts/build-drill-exercises.ts",
-    "seed:load:exercises": "tsx prisma/seed-exercises-load.ts"
+    "seed:load:exercises": "tsx prisma/seed-exercises-load.ts",
+    "ai:check": "tsx scripts/ai-check.ts"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.100.1",
@@ -24,6 +25,7 @@
     "date-fns": "^4.1.0",
     "lucide-react": "^1.11.0",
     "next": "16.2.4",
+    "openai": "^7.34.0",
     "prisma": "^7.8.0",
     "react": "19.2.4",
     "react-dom": "19.2.4",

@@ -64,6 +64,13 @@ describe("topic registry", () => {
   it("hidden topics still resolve via getTopic by id", () => {
     expect(getTopic("de_drill_nouns")?.hidden).toBe(true);
     expect(getTopic("de_drill_verbs")?.hidden).toBe(true);
+    expect(getTopic("de_drill_relative")?.hidden).toBe(true);
+    expect(getTopic("de_drill_adverbial")?.hidden).toBe(true);
+    expect(getTopic("de_drill_complement")?.hidden).toBe(true);
+    expect(getTopic("de_drill_infinitive")?.hidden).toBe(true);
+    expect(getTopic("de_drill_extras")?.hidden).toBe(true);
+    expect(getTopic("en_drill_relative")?.hidden).toBe(true);
+    expect(getTopic("en_drill_extras")?.hidden).toBe(true);
   });
 
   it("hidden topics excluded from getTopicsByCategory", () => {

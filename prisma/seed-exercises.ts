@@ -4,7 +4,12 @@ import { join } from "node:path";
 import { randomUUID } from "node:crypto";
 import "dotenv/config";
 
-import { getAnthropicClient, AI_MODEL, MAX_TOKENS } from "../src/lib/ai";
+import {
+  completeText,
+  DEFAULT_PROVIDER_ORDER,
+  getProviderChain,
+  type ProviderName,
+} from "../src/lib/ai";
 import { ALL_TOPICS, getTopic, type Topic } from "../src/lib/exercises/topics";
 import {
   EXERCISE_TYPES,
@@ -20,7 +25,7 @@ interface CliOptions {
   topic?: string;
   type?: ExerciseType;
   difficulty?: number;
-  model: string;
+  provider?: ProviderName;
   append: boolean;
   throttleMs: number;
   defaultCount: number;
@@ -47,7 +52,6 @@ const VARIETY_CATEGORIES = ["reading", "writing"] as const;
 
 function parseArgs(argv: string[]): CliOptions {
   const opts: CliOptions = {
-    model: AI_MODEL,
     append: false,
     throttleMs: 13000,
     defaultCount: 5,
@@ -84,8 +88,11 @@ function parseArgs(argv: string[]): CliOptions {
         i++;
         break;
       }
-      case "--model":
-        opts.model = next;
+      case "--provider":
+        if (!DEFAULT_PROVIDER_ORDER.includes(next as ProviderName)) {
+          throw new Error(`--provider must be one of: ${DEFAULT_PROVIDER_ORDER.join(", ")}`);
+        }
+        opts.provider = next as ProviderName;
         i++;
         break;
       case "--append":
@@ -145,25 +152,17 @@ async function generateBucket(
   type: ExerciseType,
   difficulty: number,
   count: number,
-  modelName: string,
+  provider: ProviderName | undefined,
   batchId: string,
 ): Promise<ExerciseRow[]> {
   const prompt = buildGenerationPrompt(topic, type, count, difficulty);
 
-  const response = await getAnthropicClient().messages.create({
-    model: modelName,
-    max_tokens: MAX_TOKENS,
+  const { text, model } = await completeText({
     system: SYSTEM_PROMPT,
     messages: [{ role: "user", content: prompt }],
     temperature: 0.9,
+    ...(provider ? { only: [provider] } : {}),
   });
-
-  const textBlock = response.content.find((block) => block.type === "text");
-  if (!textBlock || textBlock.type !== "text") {
-    throw new Error("No text response from AI");
-  }
-  const text = textBlock.text;
-  if (!text) throw new Error("No text response from AI");
 
   const exercises: Exercise[] = parseExerciseResponse(text, count);
   const now = new Date().toISOString();
@@ -178,7 +177,7 @@ async function generateBucket(
     payload: JSON.stringify(exercise),
     reviewStatus: "approved",
     batchId,
-    modelVersion: modelName,
+    modelVersion: model,
     createdAt: now,
   }));
 }
@@ -233,8 +232,12 @@ async function main(): Promise<void> {
     0,
   );
 
+  const chain = getProviderChain()
+    .filter((p) => !opts.provider || p.name === opts.provider)
+    .map((p) => `${p.name}:${p.model}`)
+    .join(" > ");
   console.log(
-    `[seed-exercises] batchId=${batchId} model=${opts.model} buckets=${totalBuckets} throttle=${opts.throttleMs}ms`,
+    `[seed-exercises] batchId=${batchId} providers=${chain || "none"} buckets=${totalBuckets} throttle=${opts.throttleMs}ms`,
   );
 
   const byLanguage = new Map<Language, ExerciseRow[]>();
@@ -261,7 +264,7 @@ async function main(): Promise<void> {
             type,
             difficulty,
             count,
-            opts.model,
+            opts.provider,
             batchId,
           );
           const list = byLanguage.get(topic.language)!;

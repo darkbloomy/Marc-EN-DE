@@ -179,17 +179,6 @@ const DE_TOPICS: Topic[] = [
       "Fill-in drill: German adjective comparative (größer) and superlative (am größten), including irregular forms (gut/besser/am besten).",
   },
   {
-    id: "de_drill_subclauses",
-    labelDE: "Drill: Nebensätze",
-    labelEN: "Drill: Subordinate Clauses",
-    category: "grammar",
-    language: "de",
-    difficulty: 3,
-    hidden: true,
-    description:
-      "Fill-in drill: German subordinate clauses with weil/dass/wenn/ob — conjunction choice or verb-final conjugation.",
-  },
-  {
     id: "de_drill_prepositions",
     labelDE: "Drill: Präpositionen",
     labelEN: "Drill: Prepositions",
@@ -199,6 +188,61 @@ const DE_TOPICS: Topic[] = [
     hidden: true,
     description:
       "Fill-in drill: German prepositions with cases (Akkusativ/Dativ/Wechselpräpositionen) and common fixed expressions.",
+  },
+  {
+    id: "de_drill_relative",
+    labelDE: "Drill: Relativsätze",
+    labelEN: "Drill: Relative Clauses",
+    category: "grammar",
+    language: "de",
+    difficulty: 3,
+    hidden: true,
+    description:
+      "Fill-in drill: German relative clauses. Relativpronomen der/die/das (and denen/dessen/deren/was/wo) must match gender, number, and case; the verb is final in the clause.",
+  },
+  {
+    id: "de_drill_adverbial",
+    labelDE: "Drill: Adverbialsätze",
+    labelEN: "Drill: Adverbial Clauses",
+    category: "grammar",
+    language: "de",
+    difficulty: 3,
+    hidden: true,
+    description:
+      "Fill-in drill: German adverbial clauses — time (als, wenn, während, bevor, nachdem), reason (weil, da, zumal), condition (wenn, falls, sofern), concession (obwohl, obgleich, auch wenn), purpose (damit), result (sodass), manner/comparison (indem, wie, als ob). Verb-final word order.",
+  },
+  {
+    id: "de_drill_complement",
+    labelDE: "Drill: Ergänzungssätze (dass/ob/W-Fragen)",
+    labelEN: "Drill: Complement Clauses",
+    category: "grammar",
+    language: "de",
+    difficulty: 3,
+    hidden: true,
+    description:
+      "Fill-in drill: German complement clauses used as object, subject, or predicate — dass, ob, and indirect question words (wer, was, wo, wann, warum, wie). Verb-final word order.",
+  },
+  {
+    id: "de_drill_infinitive",
+    labelDE: "Drill: Infinitivsätze (um/ohne/statt … zu)",
+    labelEN: "Drill: Infinitive Clauses",
+    category: "grammar",
+    language: "de",
+    difficulty: 3,
+    hidden: true,
+    description:
+      "Fill-in drill: German infinitive clauses with um … zu (purpose, same subject), ohne … zu, and statt/anstatt … zu, including zu placement with separable verbs.",
+  },
+  {
+    id: "de_drill_extras",
+    labelDE: "Drill: Extra (Zahlen, Zeit, Rede, Wendungen)",
+    labelEN: "Drill: Extra (numbers, time, speech, chunks)",
+    category: "grammar",
+    language: "de",
+    difficulty: 3,
+    hidden: true,
+    description:
+      "Fill-in drill: German numbers, dates, and time expressions; comparison structures (so … wie, als, je … desto); reported speech with Konjunktiv; Funktionsverbgefüge and common collocations.",
   },
 ];
 
@@ -348,17 +392,6 @@ const EN_TOPICS: Topic[] = [
       "Fill-in drill: English comparative and superlative (-er/-est, more/most, irregular good/better/best).",
   },
   {
-    id: "en_drill_subclauses",
-    labelDE: "Drill: Nebensätze (Englisch)",
-    labelEN: "Drill: Subordinate Clauses",
-    category: "grammar",
-    language: "en",
-    difficulty: 3,
-    hidden: true,
-    description:
-      "Fill-in drill: English subordinate clauses with because/when/if/that and simple relative pronouns (who/which/that).",
-  },
-  {
     id: "en_drill_prepositions",
     labelDE: "Drill: Präpositionen (Englisch)",
     labelEN: "Drill: Prepositions",
@@ -368,6 +401,61 @@ const EN_TOPICS: Topic[] = [
     hidden: true,
     description:
       "Fill-in drill: English prepositions of place/time and common verb/adjective + preposition combinations (interested in, depend on, etc.).",
+  },
+  {
+    id: "en_drill_relative",
+    labelDE: "Drill: Relativsätze (Englisch)",
+    labelEN: "Drill: Relative Clauses",
+    category: "grammar",
+    language: "en",
+    difficulty: 3,
+    hidden: true,
+    description:
+      "Fill-in drill: English relative clauses with who, which, that, whose, where, and whom.",
+  },
+  {
+    id: "en_drill_adverbial",
+    labelDE: "Drill: Adverbialsätze (Englisch)",
+    labelEN: "Drill: Adverbial Clauses",
+    category: "grammar",
+    language: "en",
+    difficulty: 3,
+    hidden: true,
+    description:
+      "Fill-in drill: English adverbial clauses — time (when, while, before, after, until, as soon as), reason (because, since), condition (if, unless), concession (although, even though), purpose (so that), result (so … that), manner/comparison (as if, as).",
+  },
+  {
+    id: "en_drill_complement",
+    labelDE: "Drill: Ergänzungssätze (Englisch)",
+    labelEN: "Drill: Complement Clauses",
+    category: "grammar",
+    language: "en",
+    difficulty: 3,
+    hidden: true,
+    description:
+      "Fill-in drill: English complement clauses used as object, subject, or predicate — that, whether/if, and indirect question words (who, what, where, when, why, how).",
+  },
+  {
+    id: "en_drill_infinitive",
+    labelDE: "Drill: Infinitivsätze (Englisch)",
+    labelEN: "Drill: Infinitive Clauses",
+    category: "grammar",
+    language: "en",
+    difficulty: 3,
+    hidden: true,
+    description:
+      "Fill-in drill: English infinitive of purpose (to / in order to) and reduced clauses with without + -ing and instead of + -ing.",
+  },
+  {
+    id: "en_drill_extras",
+    labelDE: "Drill: Extra (Zahlen, Zeit, Rede, Chunks)",
+    labelEN: "Drill: Extra (numbers, time, speech, chunks)",
+    category: "grammar",
+    language: "en",
+    difficulty: 3,
+    hidden: true,
+    description:
+      "Fill-in drill: English numbers, dates, and time expressions; comparison structures (as … as, than, the … the); reported speech; common collocations and chunks.",
   },
 ];
 

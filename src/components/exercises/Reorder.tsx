@@ -57,7 +57,7 @@ export function Reorder({
       {/* Answer area — placed items */}
       <div className="min-h-[56px] bg-blue-50 rounded-xl border-2 border-dashed border-blue-200 p-3 mb-4 flex flex-wrap gap-2">
         {placedIndices.length === 0 ? (
-          <span className="text-blue-300 text-sm italic">
+          <span className="text-blue-300 text-sm italic" data-no-lookup>
             Tap words below to build your answer...
           </span>
         ) : (

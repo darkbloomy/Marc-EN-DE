@@ -98,6 +98,7 @@ export default function DailyPracticePage() {
             source: ex.source ?? "unknown",
             exerciseId: ex.poolId ?? null,
             contentHash: ex.contentHash ?? hashExerciseContent(ex.exercise),
+            exercisePayload: JSON.stringify(ex.exercise),
           }),
         });
       }
@@ -196,6 +197,7 @@ export default function DailyPracticePage() {
       />
       <SessionSummary
         results={results}
+        exercises={exercises}
         sources={exercises.map((e) => e.source)}
         onPracticeAgain={handlePracticeAgain}
       />

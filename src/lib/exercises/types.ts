@@ -86,6 +86,8 @@ export interface ExerciseBatch {
   topic: string;
   generatedAt: string; // ISO timestamp
   source: "ai" | "fallback" | "db";
+  /** Other pool answers from this topic, used to build drill multiple-choice. */
+  distractorBank?: string[];
 }
 
 export const EXERCISE_TYPES: ExerciseType[] = [
@@ -109,13 +111,21 @@ export const DRILL_TOPIC_IDS = [
   "de_drill_nouns",
   "de_drill_verbs",
   "de_drill_adjectives",
-  "de_drill_subclauses",
   "de_drill_prepositions",
+  "de_drill_relative",
+  "de_drill_adverbial",
+  "de_drill_complement",
+  "de_drill_infinitive",
+  "de_drill_extras",
   "en_drill_plurals",
   "en_drill_verbs",
   "en_drill_adjectives",
-  "en_drill_subclauses",
   "en_drill_prepositions",
+  "en_drill_relative",
+  "en_drill_adverbial",
+  "en_drill_complement",
+  "en_drill_infinitive",
+  "en_drill_extras",
 ] as const;
 
 export function isDrillTopic(topicId: string): boolean {

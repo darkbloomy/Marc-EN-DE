@@ -12,17 +12,20 @@ vi.mock("@/lib/prisma", () => ({
 }));
 
 vi.mock("@/lib/ai", () => ({
-  getAnthropicClient: vi.fn(),
-  AI_MODEL: "claude-3-5-sonnet-20241022",
-  MAX_TOKENS: 4096,
+  completeText: vi.fn(),
 }));
 
 import { generateExercises, parseExerciseResponse } from "./generate";
 import { prisma } from "@/lib/prisma";
-import { getAnthropicClient } from "@/lib/ai";
+import { completeText } from "@/lib/ai";
 import { clearCache } from "./cache";
 
 const mockedFindMany = vi.mocked(prisma.exercise.findMany);
+const mockedComplete = vi.mocked(completeText);
+
+function aiText(text: string) {
+  return { text, provider: "grok" as const, model: "test-model" };
+}
 
 function poolRow(payload: object, id = "pool_1") {
   return { id, payload: JSON.stringify(payload) };
@@ -41,10 +44,8 @@ beforeEach(() => {
   clearCache();
 
   // Default: make AI throw so that "pool" tests exercise the fallback paths and prisma mocks
-  const mockCreate = vi.fn().mockRejectedValue(new Error("AI disabled for pool fallback test"));
-  const mockClient = { messages: { create: mockCreate } };
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  vi.mocked(getAnthropicClient).mockReturnValue(mockClient as any);
+  mockedComplete.mockReset();
+  mockedComplete.mockRejectedValue(new Error("AI disabled for pool fallback test"));
 });
 
 describe("parseExerciseResponse", () => {
@@ -108,12 +109,7 @@ describe("generateExercises (pool fallback when AI unavailable)", () => {
   });
 
   it("prefers pool for drill topics even when AI would succeed", async () => {
-    const mockCreate = vi.fn().mockResolvedValue({
-      content: [{ type: "text", text: JSON.stringify(mcExercise) }],
-    });
-    const mockClient = { messages: { create: mockCreate } };
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    vi.mocked(getAnthropicClient).mockReturnValue(mockClient as any);
+    mockedComplete.mockResolvedValue(aiText(JSON.stringify(mcExercise)));
 
     mockedFindMany.mockResolvedValueOnce(
       Array(5)
@@ -141,7 +137,14 @@ describe("generateExercises (pool fallback when AI unavailable)", () => {
     });
 
     expect(batch.source).toBe("db");
-    expect(mockCreate).not.toHaveBeenCalled();
+    expect(mockedComplete).not.toHaveBeenCalled();
+    expect(mockedFindMany.mock.calls[0][0]?.where).not.toHaveProperty(
+      "difficulty",
+    );
+    expect(
+      batch.exercises.every((e) => e.exercise.type === "fill_in_the_blank"),
+    ).toBe(true);
+    expect(batch.distractorBank?.length).toBeGreaterThan(0);
   });
 
   it("excludes recent pool ids from the query when provided", async () => {
@@ -287,13 +290,7 @@ describe("generateExercises (pool fallback when AI unavailable)", () => {
 
 describe("generateExercises (live AI primary)", () => {
   it("uses AI and returns source 'ai' when generation succeeds", async () => {
-    const mockCreate = vi.fn().mockResolvedValueOnce({
-      content: [{ type: "text", text: JSON.stringify(mcExercise) }],
-    });
-    const mockClient = { messages: { create: mockCreate } };
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    vi.mocked(getAnthropicClient).mockReturnValue(mockClient as any);
+    mockedComplete.mockResolvedValueOnce(aiText(JSON.stringify(mcExercise)));
 
     const batch = await generateExercises({
       topicId: "de_articles",
@@ -305,17 +302,11 @@ describe("generateExercises (live AI primary)", () => {
     expect(batch.exercises).toHaveLength(1);
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     expect((batch.exercises[0].exercise as any).question).toBe("Q?");
-    expect(mockCreate).toHaveBeenCalledTimes(1);
+    expect(mockedComplete).toHaveBeenCalledTimes(1);
   });
 
   it("caches AI result and does not call AI again within TTL for same key", async () => {
-    const mockCreate = vi.fn().mockResolvedValue({
-      content: [{ type: "text", text: JSON.stringify(mcExercise) }],
-    });
-    const mockClient = { messages: { create: mockCreate } };
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    vi.mocked(getAnthropicClient).mockReturnValue(mockClient as any);
+    mockedComplete.mockResolvedValue(aiText(JSON.stringify(mcExercise)));
 
     await generateExercises({
       topicId: "de_articles",
@@ -323,7 +314,7 @@ describe("generateExercises (live AI primary)", () => {
       count: 1,
       difficulty: 3,
     });
-    expect(mockCreate).toHaveBeenCalledTimes(1);
+    expect(mockedComplete).toHaveBeenCalledTimes(1);
 
     // second call hits cache, no AI
     const batch2 = await generateExercises({
@@ -332,17 +323,12 @@ describe("generateExercises (live AI primary)", () => {
       count: 1,
       difficulty: 3,
     });
-    expect(mockCreate).toHaveBeenCalledTimes(1);
+    expect(mockedComplete).toHaveBeenCalledTimes(1);
     expect(batch2.source).toBe("ai");
   });
 
   it("falls back to pool (and calls prisma) when AI generation throws", async () => {
-    // Ensure AI throws (re-apply default behavior)
-    const mockCreate = vi.fn().mockRejectedValue(new Error("rate limit or no key"));
-    const mockClient = { messages: { create: mockCreate } };
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    vi.mocked(getAnthropicClient).mockReturnValue(mockClient as any);
+    mockedComplete.mockRejectedValue(new Error("All AI providers failed"));
 
     mockedFindMany.mockResolvedValueOnce(
       Array(4).fill(null).map(() => poolRow(mcExercise)) as never,
@@ -360,11 +346,7 @@ describe("generateExercises (live AI primary)", () => {
   });
 
   it("falls back to hardcoded when both AI and pool fail", async () => {
-    const mockCreate = vi.fn().mockRejectedValue(new Error("AI boom"));
-    const mockClient = { messages: { create: mockCreate } };
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    vi.mocked(getAnthropicClient).mockReturnValue(mockClient as any);
+    mockedComplete.mockRejectedValue(new Error("AI boom"));
 
     mockedFindMany.mockRejectedValueOnce(new Error("db also down"));
 
