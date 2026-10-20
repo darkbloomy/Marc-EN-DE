@@ -6,6 +6,7 @@ import {
   planReadyText,
   PROPOSE_PLAN_TOOL,
   validatePracticePlan,
+  type PracticePlan,
 } from "@/lib/ai/tutor";
 import { errorResponse, ErrorCode } from "@/lib/api-response";
 
@@ -45,7 +46,7 @@ const SSE_HEADERS = {
 
 type ChatEvent =
   | { type: "token"; text: string }
-  | { type: "plan"; status: "ok"; plan: { language: string; topics: { topicId: string; count: number }[]; difficulty?: number } }
+  | { type: "plan"; status: "ok"; plan: PracticePlan }
   | { type: "plan"; status: "rejected"; error: string }
   | { type: "done"; assistantText: string }
   | { type: "error"; message: string };

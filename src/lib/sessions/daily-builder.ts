@@ -3,7 +3,7 @@ import type {
   GeneratedExercise,
   Language,
 } from "@/lib/exercises/types";
-import { isDrillTopic } from "@/lib/exercises/types";
+import { EXERCISE_TYPES, isDrillTopic } from "@/lib/exercises/types";
 import { getTopic, getTopicsByLanguage, type Topic } from "@/lib/exercises/topics";
 import { generateExercises } from "@/lib/exercises/generate";
 import { answersOf, applyRandomDrillFormat } from "@/lib/exercises/drill-format";
@@ -221,6 +221,32 @@ export interface CustomPlanItem {
   count: number;
 }
 
+/** Student-requested limits on which exercise types a custom session uses. */
+export interface TypeMixOptions {
+  /** Allowed types; omitted or empty = all five. */
+  exerciseTypes?: ExerciseType[];
+  /** Share of multiple choice, 0-100; omitted = default proportions. */
+  multipleChoicePercent?: number;
+}
+
+function allowedTypes(opts: TypeMixOptions): ExerciseType[] {
+  let types: ExerciseType[] = opts.exerciseTypes?.length
+    ? EXERCISE_TYPES.filter((t) => opts.exerciseTypes!.includes(t))
+    : [...EXERCISE_TYPES];
+  if (opts.multipleChoicePercent === 0) {
+    types = types.filter((t) => t !== "multiple_choice");
+  }
+  return types.length > 0 ? types : ["fill_in_the_blank"];
+}
+
+/** Drill items are fill-in, converted to multiple choice at this rate. */
+function drillChoicePercent(opts: TypeMixOptions): number {
+  const types = allowedTypes(opts);
+  if (!types.includes("multiple_choice")) return 0;
+  if (!types.includes("fill_in_the_blank")) return 100;
+  return opts.multipleChoicePercent ?? 50;
+}
+
 /**
  * Build a session from an arbitrary plan of (topic, count) pairs proposed by
  * the AI tutor. Regular topics get a mixed-type distribution scaled to the
@@ -231,7 +257,7 @@ export async function buildCustomSession(opts: {
   plan: CustomPlanItem[];
   difficulty?: number;
   profileId?: string;
-}): Promise<GeneratedExercise[]> {
+} & TypeMixOptions): Promise<GeneratedExercise[]> {
   const batches: GeneratedExercise[][] = [];
   const bankByTopic: Record<string, string[]> = {};
 
@@ -259,7 +285,7 @@ export async function buildCustomSession(opts: {
       continue;
     }
 
-    const plan = scaleTypePlan(count);
+    const plan = scaleTypePlan(count, opts);
     const generated = await generateForPlan(
       topic,
       plan,
@@ -274,32 +300,57 @@ export async function buildCustomSession(opts: {
     all,
     (item) => bankByTopic[item.topic] ?? [],
     Math.random,
-    50,
+    drillChoicePercent(opts),
   );
 }
 
-/**
- * Distribute `count` across the five exercise types in the same proportions
- * as free practice (3 MC / 2 fill / 2 T-F / 2 reorder / 1 free), rounding
- * so the parts always sum to `count`.
- */
-export function scaleTypePlan(count: number): Record<ExerciseType, number> {
-  const weights: Record<ExerciseType, number> = {
-    multiple_choice: 3,
-    fill_in_the_blank: 2,
-    true_false: 2,
-    reorder: 2,
-    free_text: 1,
-  };
-  const totalWeight = (Object.values(weights) as number[]).reduce(
-    (a, b) => a + b,
-    0,
-  );
+const TYPE_WEIGHTS: Record<ExerciseType, number> = {
+  multiple_choice: 3,
+  fill_in_the_blank: 2,
+  true_false: 2,
+  reorder: 2,
+  free_text: 1,
+};
 
-  const plan = {} as Record<ExerciseType, number>;
+/**
+ * Distribute `count` across the allowed exercise types in the same
+ * proportions as free practice (3 MC / 2 fill / 2 T-F / 2 reorder / 1 free),
+ * rounding so the parts always sum to `count`. A `multipleChoicePercent`
+ * fixes the MC share and spreads the rest over the other allowed types.
+ */
+export function scaleTypePlan(
+  count: number,
+  opts: TypeMixOptions = {},
+): Record<ExerciseType, number> {
+  const plan = Object.fromEntries(
+    EXERCISE_TYPES.map((t) => [t, 0]),
+  ) as Record<ExerciseType, number>;
+  const types = allowedTypes(opts);
+  const pct = opts.multipleChoicePercent;
+
+  if (pct !== undefined && types.includes("multiple_choice")) {
+    const others = types.filter((t) => t !== "multiple_choice");
+    const mc = others.length === 0 ? count : Math.round((count * pct) / 100);
+    plan.multiple_choice = mc;
+    distributeByWeight(plan, others, count - mc);
+    return plan;
+  }
+
+  distributeByWeight(plan, types, count);
+  return plan;
+}
+
+function distributeByWeight(
+  plan: Record<ExerciseType, number>,
+  types: ExerciseType[],
+  count: number,
+): void {
+  if (types.length === 0 || count <= 0) return;
+  const totalWeight = types.reduce((sum, t) => sum + TYPE_WEIGHTS[t], 0);
+
   let assigned = 0;
-  const entries = (Object.entries(weights) as [ExerciseType, number][]);
-  const fractional = entries.map(([type, w]) => {
+  const fractional = types.map((type) => {
+    const w = TYPE_WEIGHTS[type];
     const exact = (w / totalWeight) * count;
     const base = Math.floor(exact);
     plan[type] = base;
@@ -315,5 +366,4 @@ export function scaleTypePlan(count: number): Record<ExerciseType, number> {
     assigned += 1;
     i += 1;
   }
-  return plan;
 }

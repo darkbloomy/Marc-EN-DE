@@ -31,6 +31,8 @@ interface ExerciseResultSummary {
 }
 
 const COUNT_OPTIONS = [0, 5, 10, 15, 20];
+/** Matches the per-category cap in POST /api/sessions/build. */
+const MAX_CATEGORY_COUNT = 50;
 const MIX_OPTIONS = [10, 20, 30, 50];
 
 interface CategoryDef {
@@ -579,13 +581,30 @@ function CountPicker({
   value: number;
   onChange: (n: number) => void;
 }) {
+  // While typing, show the raw text so "1" → "15" doesn't jump to the preset button.
+  const [draft, setDraft] = useState<string | null>(null);
+  const isCustom = !COUNT_OPTIONS.includes(value);
+  const shown = draft ?? (isCustom ? String(value) : "");
+
+  function handleCustom(raw: string) {
+    const digits = raw.replace(/\D/g, "").slice(0, 3);
+    if (!digits) {
+      setDraft("");
+      onChange(0);
+      return;
+    }
+    const n = Math.min(MAX_CATEGORY_COUNT, Number(digits));
+    setDraft(String(n));
+    onChange(n);
+  }
+
   return (
     <div className="space-y-2">
       <div className="flex items-center gap-2 text-sm font-semibold text-gray-700">
         <span className="text-xl">{emoji}</span>
         {label}
       </div>
-      <div className="grid grid-cols-5 gap-2">
+      <div className="grid grid-cols-6 gap-2">
         {COUNT_OPTIONS.map((n) => {
           const isActive = value === n;
           return (
@@ -602,6 +621,23 @@ function CountPicker({
             </button>
           );
         })}
+        <input
+          type="text"
+          inputMode="numeric"
+          pattern="[0-9]*"
+          value={shown}
+          placeholder="Other"
+          onFocus={() => setDraft(shown)}
+          onChange={(e) => handleCustom(e.target.value)}
+          onBlur={() => setDraft(null)}
+          title={`Any number from 0 to ${MAX_CATEGORY_COUNT}`}
+          aria-label={`${label}: custom number of exercises (0-${MAX_CATEGORY_COUNT})`}
+          className={`min-w-0 py-3 rounded-xl text-lg font-semibold text-center border-2 transition-colors focus:outline-none focus:border-emerald-500 placeholder:text-sm placeholder:font-normal placeholder:text-gray-400 ${
+            isCustom
+              ? "bg-emerald-500 border-emerald-500 text-white"
+              : "bg-white border-gray-200 text-gray-700 hover:border-emerald-300"
+          }`}
+        />
       </div>
     </div>
   );

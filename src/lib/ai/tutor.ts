@@ -1,18 +1,14 @@
 import { prisma } from "@/lib/prisma";
 import { ALL_TOPICS, getTopic } from "@/lib/exercises/topics";
-import type { Language } from "@/lib/exercises/types";
+import { EXERCISE_TYPES, isDrillTopic, type ExerciseType } from "@/lib/exercises/types";
+import type { ToolDefinition } from "@/lib/ai";
+import type { PracticePlan } from "./plan";
 
-export interface PracticePlan {
-  language: Language;
-  topics: { topicId: string; count: number }[];
-  difficulty?: number;
-}
+export { describePlan, type PracticePlan } from "./plan";
 
 export const MAX_PLAN_TOPICS = 3;
 export const MAX_PLAN_EXERCISES = 50;
 export const MAX_PLAN_EXERCISES_PER_TOPIC = 50;
-
-import type { ToolDefinition } from "@/lib/ai";
 
 export const PROPOSE_PLAN_TOOL: ToolDefinition = {
   name: "propose_practice_plan",
@@ -55,6 +51,22 @@ export const PROPOSE_PLAN_TOOL: ToolDefinition = {
         maximum: 5,
         description:
           "Optional difficulty override (1=easiest, 5=hardest). Omit unless the user asks for easier/harder.",
+      },
+      exerciseTypes: {
+        type: "array",
+        minItems: 1,
+        items: { type: "string", enum: EXERCISE_TYPES },
+        description:
+          "Exercise types the session may use. Omit for the default mix of all five. " +
+          'Set it whenever the user excludes or restricts types, e.g. "no multiple choice" / "不要选择题" → ' +
+          '["fill_in_the_blank","true_false","reorder","free_text"]; "only fill-in" → ["fill_in_the_blank"].',
+      },
+      multipleChoicePercent: {
+        type: "number",
+        minimum: 0,
+        maximum: 100,
+        description:
+          "Share of multiple-choice questions (0-100) when the user asks for one, e.g. \"30% multiple choice\". Omit otherwise.",
       },
     },
     required: ["language", "topics"],
@@ -140,7 +152,77 @@ export function validatePracticePlan(raw: unknown): PlanValidation {
       ? Math.round(r.difficulty)
       : undefined;
 
-  return { ok: true, plan: { language, topics, difficulty } };
+  const mix = validateTypeMix(r.exerciseTypes, r.multipleChoicePercent);
+  if (!mix.ok) return mix;
+  const { exerciseTypes, multipleChoicePercent } = mix;
+
+  if (
+    exerciseTypes &&
+    !exerciseTypes.includes("fill_in_the_blank") &&
+    !exerciseTypes.includes("multiple_choice")
+  ) {
+    const drill = topics.find((t) => isDrillTopic(t.topicId));
+    if (drill) {
+      return {
+        ok: false,
+        error: `Drill topic "${drill.topicId}" only makes fill-in / multiple-choice items — use a regular topic for other types`,
+      };
+    }
+  }
+
+  return {
+    ok: true,
+    plan: {
+      language,
+      topics,
+      difficulty,
+      ...(exerciseTypes ? { exerciseTypes } : {}),
+      ...(multipleChoicePercent !== undefined ? { multipleChoicePercent } : {}),
+    },
+  };
+}
+
+type TypeMixValidation =
+  | { ok: true; exerciseTypes?: ExerciseType[]; multipleChoicePercent?: number }
+  | { ok: false; error: string };
+
+/**
+ * Normalise the type restrictions: 0% MC becomes "MC not allowed", 100% MC
+ * becomes "MC only", and a full type list is the same as no restriction.
+ */
+function validateTypeMix(rawTypes: unknown, rawPercent: unknown): TypeMixValidation {
+  let types: ExerciseType[] | undefined;
+  if (Array.isArray(rawTypes) && rawTypes.length > 0) {
+    types = EXERCISE_TYPES.filter((t) => rawTypes.includes(t));
+    if (types.length === 0) {
+      return { ok: false, error: `exerciseTypes must use: ${EXERCISE_TYPES.join(", ")}` };
+    }
+  }
+
+  let percent =
+    typeof rawPercent === "number" && Number.isFinite(rawPercent)
+      ? Math.max(0, Math.min(100, Math.round(rawPercent)))
+      : undefined;
+
+  if (percent === 0) {
+    types = (types ?? EXERCISE_TYPES).filter((t) => t !== "multiple_choice");
+    percent = undefined;
+    if (types.length === 0) {
+      return { ok: false, error: "0% multiple choice leaves no exercise types" };
+    }
+  } else if (percent === 100) {
+    if (types && !types.includes("multiple_choice")) {
+      return { ok: false, error: "100% multiple choice conflicts with exerciseTypes" };
+    }
+    types = ["multiple_choice"];
+    percent = undefined;
+  } else if (percent !== undefined && types && !types.includes("multiple_choice")) {
+    percent = undefined;
+  }
+
+  if (types?.length === EXERCISE_TYPES.length) types = undefined;
+  if (types?.length === 1) percent = undefined;
+  return { ok: true, exerciseTypes: types, multipleChoicePercent: percent };
 }
 
 /** Reply shown when the model proposed a plan without writing any text, in the user's language. */
@@ -150,19 +232,6 @@ export function planReadyText(lastUserMessage: string): string {
     return "Hier ist dein Plan — tippe auf Start auf der Karte!";
   }
   return "Here is your plan — tap Start on the card to begin!";
-}
-
-export function describePlan(plan: PracticePlan): string {
-  const topics = plan.topics
-    .map(
-      (t) =>
-        `${getTopic(t.topicId)?.labelEN ?? t.topicId} × ${t.count}`,
-    )
-    .join(" + ");
-  const difficulty = plan.difficulty ? ` · d${plan.difficulty}` : "";
-  return `${plan.topics.reduce((s, t) => s + t.count, 0)} exercises · ${
-    plan.language === "de" ? "German" : "English"
-  } · ${topics}${difficulty}`;
 }
 
 function truncate(s: string, max: number): string {
@@ -241,7 +310,7 @@ STYLE RULES
 
 TOOL USE
 - Use propose_practice_plan whenever the user wants to practice or generate exercises. Map the request to registered topics:
-  "simple past" → en_simple_past, "Relativsätze" → de_drill_relative, "Präteritum" → de_past_tenses, "articles" → de_articles, "plurals" → en_drill_plurals,
+  "simple past" → en_simple_past, "Relativsätze" → de_drill_relative, "Präteritum" → de_past_tenses, "articles" → de_articles, "plurals" → en_drill_plurals, English pronouns ("人称代词") → en_pronouns,
   German noun article + plural drills ("名词冠词及复数") → de_drill_nouns, German verb form / conjugation drills incl. Präteritum + Partizip II ("动词变位", "过去分词") → de_drill_verbs, …
 - Infer the language from context: a German request about German grammar → language "de"; an English request about English → "en". Do not ask which language when the request itself makes it clear.
 - Drill topics (marked "(drill)") produce focused fill-in / multiple-choice drills — prefer them for narrow grammar drilling.
@@ -249,7 +318,8 @@ TOOL USE
 - If the request is missing a number or a topic, ask ONE short clarifying question instead of guessing.
 - Do not call the tool for plain questions or explanations.
 - A plan card ONLY appears when you call propose_practice_plan. Every new, repeated ("again", "regenerate", "noch mal", "重新生成") or changed practice request needs a NEW tool call — even if earlier turns already had plans. Never describe a plan in text instead of calling the tool.
-- Requests about a share of multiple-choice questions can't be set in the plan; just call the tool and mention that briefly.
+- Exercise types: multiple_choice (选择题), fill_in_the_blank (填空), true_false (判断题), reorder (word order / 排序), free_text (writing / 写作). If the user excludes or restricts types ("no multiple choice", "keine Multiple-Choice", "不能有选择题", "only fill-in"), set exerciseTypes to the allowed types. For a requested share ("30% multiple choice", "一半选择题") set multipleChoicePercent. Otherwise omit both. Keep these restrictions when the user later adjusts the same plan.
+- Drill topics only produce fill-in and multiple-choice items. If the user wants other types (true/false, word order, writing), use a regular topic instead.
 
 TOPICS (topicId — label [language, difficulty])
 ${topicListBlock()}

@@ -38,6 +38,21 @@ const buildSchema = z
     plan: z.array(planItemSchema).min(1).max(3).optional(),
     /** Custom mode: explicit difficulty override from the AI plan (1-5). */
     difficulty: z.number().int().min(1).max(5).optional(),
+    /** Custom mode: exercise types the student allowed (omitted = all). */
+    exerciseTypes: z
+      .array(
+        z.enum([
+          "multiple_choice",
+          "fill_in_the_blank",
+          "true_false",
+          "reorder",
+          "free_text",
+        ]),
+      )
+      .min(1)
+      .optional(),
+    /** Custom mode: share of multiple-choice questions (0-100). */
+    multipleChoicePercent: z.number().min(0).max(100).optional(),
     /** When set, ignore per-category counts and spread this total across all drill aspects. */
     mixTotal: z.number().int().min(1).max(50).optional(),
     /** Grammar drills: 0 = all fill-in, 100 = all multiple choice. */
@@ -157,6 +172,8 @@ export async function POST(request: Request) {
                 plan: data.plan!,
                 difficulty,
                 profileId: data.profileId,
+                exerciseTypes: data.exerciseTypes,
+                multipleChoicePercent: data.multipleChoicePercent,
               })
             : await buildDrillsSession({
               language: data.language,

@@ -15,10 +15,14 @@ import { hashExerciseContent } from "./content-hash";
 import { getRecentExerciseKeys } from "./recent";
 import { pickDiverseFromPool } from "./pool-pick";
 import { answersOf } from "./drill-format";
+import { sanitizeExercises } from "./sanitize";
 
 // Grok at its default (high) reasoning effort takes ~50s per batch; a kid is
 // waiting on a spinner, so keep it low and let slow providers time out.
 const GENERATION_SPEED = { reasoningEffort: "low", timeoutMs: 45_000 } as const;
+// Each item carries EN + CN explanations (~300 tokens); bigger requests overflow
+// the 4096-token output cap and come back as truncated JSON.
+const AI_CHUNK_SIZE = 6;
 
 function parseExerciseResponse(text: string, count: number): Exercise[] {
   let cleaned = text.trim();
@@ -28,13 +32,10 @@ function parseExerciseResponse(text: string, count: number): Exercise[] {
 
   const parsed = JSON.parse(cleaned);
 
-  if (count === 1) {
-    return [parsed as Exercise];
+  if (count === 1 || !Array.isArray(parsed)) {
+    return sanitizeExercises([parsed as Exercise]);
   }
-  if (!Array.isArray(parsed)) {
-    return [parsed as Exercise];
-  }
-  return parsed as Exercise[];
+  return sanitizeExercises(parsed as Exercise[]);
 }
 
 interface PoolRow {
@@ -155,6 +156,34 @@ function toGenerated(
   };
 }
 
+async function requestExercises(
+  topic: Topic,
+  exerciseType: ExerciseType,
+  count: number,
+  difficulty?: number,
+  avoidStems?: string[],
+  temperature = 0.9,
+): Promise<Exercise[]> {
+  const { text } = await completeText({
+    system: SYSTEM_PROMPT,
+    messages: [
+      {
+        role: "user",
+        content: buildGenerationPrompt(topic, exerciseType, count, difficulty, avoidStems),
+      },
+    ],
+    temperature,
+    ...GENERATION_SPEED,
+  });
+  return parseExerciseResponse(text, count);
+}
+
+function chunkSizes(count: number): number[] {
+  const chunks = Math.ceil(count / AI_CHUNK_SIZE);
+  const base = Math.floor(count / chunks);
+  return Array.from({ length: chunks }, (_, i) => base + (i < count % chunks ? 1 : 0));
+}
+
 async function generateFromAI(
   topic: Topic,
   exerciseType: ExerciseType,
@@ -163,22 +192,15 @@ async function generateFromAI(
   avoidStems?: string[],
   excludeHashes: string[] = [],
 ): Promise<ExerciseBatch> {
-  const prompt = buildGenerationPrompt(
-    topic,
-    exerciseType,
-    count,
-    difficulty,
-    avoidStems,
+  const results = await Promise.allSettled(
+    chunkSizes(count).map((n) =>
+      requestExercises(topic, exerciseType, n, difficulty, avoidStems),
+    ),
   );
+  const firstFailure = results.find((r) => r.status === "rejected");
+  let exercises = results.flatMap((r) => (r.status === "fulfilled" ? r.value : []));
+  if (exercises.length === 0 && firstFailure) throw firstFailure.reason;
 
-  const { text } = await completeText({
-    system: SYSTEM_PROMPT,
-    messages: [{ role: "user", content: prompt }],
-    temperature: 0.9,
-    ...GENERATION_SPEED,
-  });
-
-  let exercises = parseExerciseResponse(text, count);
   const excludeSet = new Set(excludeHashes);
   const seenInBatch = new Set<string>();
 
@@ -189,45 +211,36 @@ async function generateFromAI(
     return true;
   });
 
-  // One refill attempt if filtering removed too many
+  // One refill round if filtering (or a failed chunk) left us short
   if (exercises.length < count) {
-    try {
-      const refillPrompt = buildGenerationPrompt(
-        topic,
-        exerciseType,
-        count - exercises.length,
-        difficulty,
-        [
-          ...(avoidStems ?? []),
-          ...exercises.map((e) =>
-            e.type === "fill_in_the_blank"
-              ? e.sentence
-              : e.type === "multiple_choice"
-                ? e.question
-                : e.type === "true_false"
-                  ? e.statement
-                  : e.type === "reorder"
-                    ? e.instruction
-                    : e.prompt,
-          ),
-        ],
-      );
-      const refill = await completeText({
-        system: SYSTEM_PROMPT,
-        messages: [{ role: "user", content: refillPrompt }],
-        temperature: 0.95,
-        ...GENERATION_SPEED,
-      });
-      const more = parseExerciseResponse(refill.text, count - exercises.length);
-      for (const ex of more) {
+    const avoid = [
+      ...(avoidStems ?? []),
+      ...exercises.map((e) =>
+        e.type === "fill_in_the_blank"
+          ? e.sentence
+          : e.type === "multiple_choice"
+            ? e.question
+            : e.type === "true_false"
+              ? e.statement
+              : e.type === "reorder"
+                ? e.instruction
+                : e.prompt,
+      ),
+    ];
+    const refills = await Promise.allSettled(
+      chunkSizes(count - exercises.length).map((n) =>
+        requestExercises(topic, exerciseType, n, difficulty, avoid, 0.95),
+      ),
+    );
+    for (const r of refills) {
+      if (r.status !== "fulfilled") continue;
+      for (const ex of r.value) {
+        if (exercises.length >= count) break;
         const h = hashExerciseContent(ex);
         if (excludeSet.has(h) || seenInBatch.has(h)) continue;
         seenInBatch.add(h);
         exercises.push(ex);
-        if (exercises.length >= count) break;
       }
-    } catch {
-      // keep partial set
     }
   }
 
@@ -237,6 +250,9 @@ async function generateFromAI(
     .map((exercise) =>
       toGenerated(exercise, topic, effectiveDifficulty, "ai"),
     );
+  if (generated.length === 0) {
+    throw new Error("AI returned no usable exercises");
+  }
 
   return {
     exercises: generated,

@@ -151,8 +151,67 @@ describe("describePlan", () => {
       difficulty: 3,
     });
     expect(text).toBe(
-      "20 exercises · English · Simple Past (Regular & Irregular) × 10 + Pronouns × 10 · d3",
+      "20 exercises · English · Simple Past (Regular & Irregular) × 10 + Pronouns × 10 · difficulty 3",
     );
+  });
+
+  it("mentions exercise type restrictions", () => {
+    const base = { language: "en" as const, topics: [{ topicId: "en_pronouns", count: 10 }] };
+    expect(
+      describePlan({
+        ...base,
+        exerciseTypes: ["fill_in_the_blank", "true_false", "reorder", "free_text"],
+      }),
+    ).toMatch(/· no multiple choice$/);
+    expect(describePlan({ ...base, exerciseTypes: ["fill_in_the_blank"] })).toMatch(
+      /· only fill-in$/,
+    );
+    expect(describePlan({ ...base, multipleChoicePercent: 30 })).toMatch(
+      /· 30% multiple choice$/,
+    );
+  });
+});
+
+describe("validatePracticePlan exercise types", () => {
+  const base = { language: "en", topics: [{ topicId: "en_pronouns", count: 10 }] };
+  const noMc = ["fill_in_the_blank", "true_false", "reorder", "free_text"];
+
+  it("keeps an exerciseTypes restriction", () => {
+    const result = validatePracticePlan({ ...base, exerciseTypes: noMc });
+    expect(result.ok && result.plan.exerciseTypes).toEqual(noMc);
+  });
+
+  it("turns 0% multiple choice into a type restriction", () => {
+    const result = validatePracticePlan({ ...base, multipleChoicePercent: 0 });
+    expect(result.ok).toBe(true);
+    if (result.ok) {
+      expect(result.plan.exerciseTypes).toEqual(noMc);
+      expect(result.plan.multipleChoicePercent).toBeUndefined();
+    }
+  });
+
+  it("drops a full type list and unknown types", () => {
+    const all = validatePracticePlan({
+      ...base,
+      exerciseTypes: [...noMc, "multiple_choice", "essay"],
+    });
+    expect(all.ok && all.plan.exerciseTypes).toBeUndefined();
+    expect(validatePracticePlan({ ...base, exerciseTypes: ["essay"] }).ok).toBe(false);
+  });
+
+  it("keeps a partial multiple-choice share", () => {
+    const result = validatePracticePlan({ ...base, multipleChoicePercent: 30 });
+    expect(result.ok && result.plan.multipleChoicePercent).toBe(30);
+  });
+
+  it("rejects drill topics that can't produce the allowed types", () => {
+    const result = validatePracticePlan({
+      language: "de",
+      topics: [{ topicId: "de_drill_relative", count: 10 }],
+      exerciseTypes: ["true_false"],
+    });
+    expect(result.ok).toBe(false);
+    if (!result.ok) expect(result.error).toMatch(/fill-in \/ multiple-choice/);
   });
 });
 

@@ -1,18 +1,31 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Sparkles, X, Send, Loader2, PlayCircle, AlertTriangle, RotateCcw } from "lucide-react";
+import {
+  Sparkles,
+  X,
+  Send,
+  Loader2,
+  PlayCircle,
+  AlertTriangle,
+  RotateCcw,
+  Mic,
+  Square,
+} from "lucide-react";
 import { useProfile } from "@/contexts/ProfileContext";
-import { getTopic } from "@/lib/exercises/topics";
-import type { GeneratedExercise, Language } from "@/lib/exercises/types";
+import type { GeneratedExercise } from "@/lib/exercises/types";
 import { toModelHistory } from "@/lib/ai/chat-history";
+import { describePlan, type PracticePlan } from "@/lib/ai/plan";
+import {
+  DEFAULT_SPEECH_LANG,
+  SPEECH_LANGS,
+  isSpeechLang,
+  type SpeechLang,
+} from "@/lib/speech";
+import { useSpeechInput } from "@/components/useSpeechInput";
 
-export interface AiPlan {
-  language: Language;
-  topics: { topicId: string; count: number }[];
-  difficulty?: number;
-}
+export type AiPlan = PracticePlan;
 
 type ChatMsg =
   | { kind: "user"; text: string }
@@ -41,6 +54,16 @@ const SUGGESTIONS = [
 ];
 
 const SESSION_KEY_PREFIX = "ai-session-";
+const SPEECH_LANG_KEY = "ai-tutor-speech-lang";
+
+function loadSpeechLang(): SpeechLang {
+  try {
+    const stored = typeof window === "undefined" ? null : localStorage.getItem(SPEECH_LANG_KEY);
+    return isSpeechLang(stored) ? stored : DEFAULT_SPEECH_LANG;
+  } catch {
+    return DEFAULT_SPEECH_LANG;
+  }
+}
 
 export function AiChatModal({
   open,
@@ -57,7 +80,29 @@ export function AiChatModal({
   const [busy, setBusy] = useState(false);
   const [startingPlan, setStartingPlan] = useState(false);
   const [lastPlan, setLastPlan] = useState<string | null>(null);
+  const [speechLang, setSpeechLang] = useState<SpeechLang>(loadSpeechLang);
+  const speech = useSpeechInput(setInput);
+  const { cancel: cancelSpeech } = speech;
   const scrollRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!open) cancelSpeech();
+  }, [open, cancelSpeech]);
+
+  function chooseSpeechLang(lang: SpeechLang) {
+    setSpeechLang(lang);
+    try {
+      localStorage.setItem(SPEECH_LANG_KEY, lang);
+    } catch {
+      // storage unavailable (private mode) — the choice lasts until reload
+    }
+    if (speech.listening) speech.start(input, lang);
+  }
+
+  function toggleMic() {
+    if (speech.listening) speech.stop();
+    else speech.start(input, speechLang);
+  }
 
   useEffect(() => {
     if (!open) return;
@@ -72,19 +117,10 @@ export function AiChatModal({
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight });
   }, [messages, streamText]);
 
-  const planDescription = useCallback((plan: AiPlan): string => {
-    const topics = plan.topics
-      .map((t) => `${getTopic(t.topicId)?.labelEN ?? t.topicId} × ${t.count}`)
-      .join(" + ");
-    const difficulty = plan.difficulty ? ` · difficulty ${plan.difficulty}` : "";
-    return `${plan.topics.reduce((s, t) => s + t.count, 0)} exercises · ${
-      plan.language === "de" ? "German" : "English"
-    } · ${topics}${difficulty}`;
-  }, []);
-
   async function send(text: string) {
     const trimmed = text.trim();
     if (!trimmed || busy) return;
+    speech.cancel();
     setInput("");
     setBusy(true);
     setMessages((prev) => [...prev, { kind: "user", text: trimmed }]);
@@ -134,7 +170,7 @@ export function AiChatModal({
             setStreamText("");
             setMessages((prev) => [...prev, { kind: "plan", status: "ok", plan: evt.plan }]);
             planShown = evt.plan;
-            setLastPlan(planDescription(evt.plan));
+            setLastPlan(describePlan(evt.plan));
           } else if (evt.type === "plan" && evt.status === "rejected") {
             setStreamText("");
             setMessages((prev) => [
@@ -197,6 +233,10 @@ export function AiChatModal({
           mode: "custom",
           plan: plan.topics,
           ...(plan.difficulty ? { difficulty: plan.difficulty } : {}),
+          ...(plan.exerciseTypes ? { exerciseTypes: plan.exerciseTypes } : {}),
+          ...(plan.multipleChoicePercent !== undefined
+            ? { multipleChoicePercent: plan.multipleChoicePercent }
+            : {}),
         }),
       });
       const buildData = await buildRes.json();
@@ -239,6 +279,7 @@ export function AiChatModal({
   }
 
   function clearChat() {
+    speech.cancel();
     setMessages([]);
     setLastPlan(null);
     setStreamText("");
@@ -365,7 +406,7 @@ export function AiChatModal({
                       Practice Plan
                     </span>
                   </div>
-                  <p className="text-sm text-gray-700">{planDescription(m.plan)}</p>
+                  <p className="text-sm text-gray-700">{describePlan(m.plan)}</p>
                   <button
                     onClick={() => startPlan(m.plan)}
                     disabled={startingPlan || busy}
@@ -409,7 +450,39 @@ export function AiChatModal({
         </div>
 
         {/* Input */}
-        <div className="border-t border-gray-100 p-3 flex items-end gap-2 bg-white">
+        {speech.supported && (
+          <div className="border-t border-gray-100 px-3 pt-2 flex items-center gap-2 bg-white">
+            <span className="text-xs text-gray-400">Speak in</span>
+            <div role="radiogroup" aria-label="Voice input language" className="flex gap-1">
+              {SPEECH_LANGS.map((l) => (
+                <button
+                  key={l.code}
+                  role="radio"
+                  aria-checked={speechLang === l.code}
+                  onClick={() => chooseSpeechLang(l.code)}
+                  className={`px-2.5 py-1 text-xs rounded-full border transition-colors ${
+                    speechLang === l.code
+                      ? "bg-violet-600 border-violet-600 text-white"
+                      : "border-gray-200 text-gray-600 hover:border-violet-300 hover:bg-violet-50"
+                  }`}
+                >
+                  {l.label}
+                </button>
+              ))}
+            </div>
+            <span
+              className={`ml-auto text-xs truncate ${speech.error ? "text-red-500" : "text-violet-600"}`}
+              aria-live="polite"
+            >
+              {speech.error ?? (speech.listening ? "Listening…" : "")}
+            </span>
+          </div>
+        )}
+        <div
+          className={`p-3 flex items-end gap-2 bg-white ${
+            speech.supported ? "" : "border-t border-gray-100"
+          }`}
+        >
           <textarea
             value={input}
             onChange={(e) => setInput(e.target.value)}
@@ -423,6 +496,22 @@ export function AiChatModal({
             placeholder="Ask or request practice…"
             className="flex-1 resize-none rounded-xl border border-gray-200 px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-violet-300"
           />
+          {speech.supported && (
+            <button
+              onClick={toggleMic}
+              disabled={busy}
+              className={`p-2.5 rounded-xl transition-colors disabled:opacity-40 ${
+                speech.listening
+                  ? "bg-red-500 text-white hover:bg-red-600 animate-pulse"
+                  : "border border-violet-200 text-violet-600 hover:bg-violet-50"
+              }`}
+              aria-label={speech.listening ? "Stop voice input" : "Start voice input"}
+              aria-pressed={speech.listening}
+              title={speech.listening ? "Stop listening" : "Tap and speak"}
+            >
+              {speech.listening ? <Square size={18} /> : <Mic size={18} />}
+            </button>
+          )}
           <button
             onClick={() => send(input)}
             disabled={busy || !input.trim()}

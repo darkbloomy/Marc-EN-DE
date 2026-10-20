@@ -19,7 +19,8 @@ function normalize(s: string): string {
   return s.trim().toLowerCase().replace(/\s+/g, " ");
 }
 
-function matches(answer: string, meta: BlankMeta): boolean {
+function matches(answer: string, meta: BlankMeta | undefined): boolean {
+  if (!meta?.correctAnswer) return false;
   const norm = normalize(answer);
   if (norm === normalize(meta.correctAnswer)) return true;
   return meta.acceptableAnswers?.some((a) => normalize(a) === norm) ?? false;
@@ -39,7 +40,7 @@ export function FillInTheBlank({
       },
     ];
 
-  const parts = exercise.sentence.split("___");
+  const parts = exercise.sentence.replace(/_{3,}/g, "___").split("___");
   const blankCount = parts.length - 1;
 
   const [answers, setAnswers] = useState<string[]>(() =>

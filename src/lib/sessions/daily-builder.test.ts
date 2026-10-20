@@ -215,6 +215,21 @@ describe("scaleTypePlan", () => {
     expect(plan.fill_in_the_blank + plan.true_false + plan.reorder + plan.free_text).toBe(0);
   });
 
+  it("leaves out excluded types", () => {
+    const plan = scaleTypePlan(10, {
+      exerciseTypes: ["fill_in_the_blank", "true_false", "reorder", "free_text"],
+    });
+    expect(plan.multiple_choice).toBe(0);
+    expect(Object.values(plan).reduce((a, b) => a + b, 0)).toBe(10);
+  });
+
+  it("fixes the multiple-choice share when a percent is given", () => {
+    const plan = scaleTypePlan(10, { multipleChoicePercent: 50 });
+    expect(plan.multiple_choice).toBe(5);
+    expect(Object.values(plan).reduce((a, b) => a + b, 0)).toBe(10);
+    expect(scaleTypePlan(10, { multipleChoicePercent: 0 }).multiple_choice).toBe(0);
+  });
+
   it("keeps multiple choice as the largest share", () => {
     for (const count of [11, 13, 20, 25, 49]) {
       const plan = scaleTypePlan(count);
@@ -279,6 +294,19 @@ describe("buildCustomSession", () => {
         preferPool: true,
       }),
     );
+  });
+
+  it("never asks for multiple choice when it is excluded", async () => {
+    const result = await buildCustomSession({
+      plan: [
+        { topicId: "en_pronouns", count: 10 },
+        { topicId: "en_drill_relative", count: 10 },
+      ],
+      exerciseTypes: ["fill_in_the_blank", "true_false", "reorder", "free_text"],
+    });
+    const types = mockedGenerate.mock.calls.map((c) => c[0].exerciseType);
+    expect(types).not.toContain("multiple_choice");
+    expect(result.filter((e) => e.exercise.type === "multiple_choice")).toHaveLength(0);
   });
 
   it("throws on an unknown topic", async () => {

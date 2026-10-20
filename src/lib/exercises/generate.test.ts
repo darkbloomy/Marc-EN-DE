@@ -359,4 +359,52 @@ describe("generateExercises (live AI primary)", () => {
     expect(batch.source).toBe("fallback");
     expect(batch.exercises.length).toBeGreaterThan(0);
   });
+
+  it("splits large requests into parallel chunks of at most 6", async () => {
+    let n = 0;
+    mockedComplete.mockImplementation(async (opts) => {
+      const asked = Number(/Generate (\d+)/.exec(opts.messages[0].content)?.[1] ?? 1);
+      const items = Array.from({ length: asked }, () => ({
+        type: "true_false",
+        statement: `S${n++}`,
+        isTrue: true,
+        explanation: "x",
+      }));
+      return aiText(JSON.stringify(asked === 1 ? items[0] : items));
+    });
+
+    const batch = await generateExercises({
+      topicId: "en_pronouns",
+      exerciseType: "true_false",
+      count: 20,
+    });
+
+    expect(batch.source).toBe("ai");
+    expect(batch.exercises).toHaveLength(20);
+    expect(mockedComplete).toHaveBeenCalledTimes(4);
+  });
+
+  it("falls back to the pool when every AI fill-in is malformed", async () => {
+    mockedComplete.mockResolvedValue(
+      aiText(
+        JSON.stringify({
+          type: "fill_in_the_blank",
+          sentence: "___ gave ___ the book.",
+          correctAnswer: "She",
+          explanation: "x",
+        }),
+      ),
+    );
+    mockedFindMany.mockResolvedValueOnce(
+      Array(4).fill(null).map(() => poolRow(mcExercise)) as never,
+    );
+
+    const batch = await generateExercises({
+      topicId: "de_articles",
+      exerciseType: "multiple_choice",
+      count: 1,
+    });
+
+    expect(batch.source).toBe("db");
+  });
 });
