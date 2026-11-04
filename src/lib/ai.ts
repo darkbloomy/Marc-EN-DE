@@ -5,8 +5,8 @@ import type { AuthClient } from "google-auth-library";
 
 type AnthropicClient = Anthropic | AnthropicVertex;
 
-export type ProviderName = "grok" | "sonnet" | "opus" | "qwen";
-export const DEFAULT_PROVIDER_ORDER: ProviderName[] = ["grok", "sonnet", "opus", "qwen"];
+export type ProviderName = "gemini" | "argon" | "grok" | "sonnet" | "opus" | "qwen";
+export const DEFAULT_PROVIDER_ORDER: ProviderName[] = ["gemini", "argon", "grok", "sonnet", "opus", "qwen"];
 
 export interface ProviderConfig {
   name: ProviderName;
@@ -15,6 +15,8 @@ export interface ProviderConfig {
   baseURL?: string;
   apiKey?: string;
   supportsReasoningEffort?: boolean;
+  /** Used when the caller passes no effort (Gemini counts thinking against max_tokens). */
+  defaultReasoningEffort?: ReasoningEffort;
   /** vLLM/Qwen3 `enable_thinking` switch; thinking otherwise eats the whole token budget. */
   thinkingToggle?: boolean;
 }
@@ -51,6 +53,9 @@ const STREAM_TIMEOUT_MS = 30_000;
 export const DEFAULT_XAI_BASE_URL = "https://inference.tesla.com/xai/v1";
 export const DEFAULT_QWEN_BASE_URL = "https://inference.tesla.com/v1";
 export const DEFAULT_QWEN_MODEL = "Qwen/Qwen3.8-Flash-Next-FP8";
+export const DEFAULT_GEMINI_BASE_URL = "https://generativelanguage.googleapis.com/v1beta/openai/";
+export const DEFAULT_GEMINI_MODEL = "gemini-3.8-flash";
+export const DEFAULT_GEMINI_ARGON_MODEL = "gemini-4-argon";
 
 export class AiUnavailableError extends Error {
   constructor(public readonly failures: { provider: ProviderName; message: string }[]) {
@@ -87,7 +92,19 @@ function parseOrder(raw: string | undefined): ProviderName[] {
 /** Configured providers in fallback order; unconfigured ones are omitted. */
 export function getProviderChain(env: NodeJS.ProcessEnv = process.env): ProviderConfig[] {
   const sharedToken = env.ANTHROPIC_AUTH_TOKEN;
+  const geminiKey = env.GEMINI_API_KEY;
+  const gemini = (name: ProviderName, model: string): ProviderConfig => ({
+    name,
+    kind: "openai",
+    model,
+    baseURL: env.GEMINI_BASE_URL || DEFAULT_GEMINI_BASE_URL,
+    apiKey: geminiKey,
+    supportsReasoningEffort: true,
+    defaultReasoningEffort: "low",
+  });
   const all: Record<ProviderName, ProviderConfig | null> = {
+    gemini: geminiKey ? gemini("gemini", env.GEMINI_MODEL || DEFAULT_GEMINI_MODEL) : null,
+    argon: geminiKey ? gemini("argon", env.GEMINI_ARGON_MODEL || DEFAULT_GEMINI_ARGON_MODEL) : null,
     grok:
       env.GROK_DEFAULT_MODEL && (env.XAI_API_KEY || sharedToken)
         ? {
@@ -257,6 +274,7 @@ export function openAIReasoningParams(
   p: ProviderConfig,
   effort: ReasoningEffort | undefined,
 ): Record<string, unknown> {
+  effort ??= p.defaultReasoningEffort;
   if (p.supportsReasoningEffort) return effort ? { reasoning_effort: effort } : {};
   if (p.thinkingToggle) {
     return { chat_template_kwargs: { enable_thinking: effort === "medium" || effort === "high" } };

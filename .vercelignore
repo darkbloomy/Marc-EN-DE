@@ -1,0 +1,3 @@
+# Production config lives in Vercel env vars; local files hold internal-network tokens.
+.env*
+*.db

@@ -47,6 +47,9 @@ import {
   DEFAULT_QWEN_MODEL,
   DEFAULT_XAI_BASE_URL,
   DEFAULT_QWEN_BASE_URL,
+  DEFAULT_GEMINI_BASE_URL,
+  DEFAULT_GEMINI_MODEL,
+  DEFAULT_GEMINI_ARGON_MODEL,
   type StreamEvent,
 } from "./ai";
 
@@ -71,6 +74,9 @@ function stubEnv(env: Record<string, string>) {
     "XAI_API_KEY",
     "QWEN_API_KEY",
     "QWEN_MODEL",
+    "GEMINI_API_KEY",
+    "GEMINI_MODEL",
+    "GEMINI_ARGON_MODEL",
     "AI_PROVIDER_ORDER",
   ]) {
     vi.stubEnv(key, env[key] ?? "");
@@ -137,6 +143,26 @@ describe("getProviderChain", () => {
   it("prefers ANTHROPIC_MODEL for the sonnet slot", () => {
     stubEnv({ ...FULL_ENV, ANTHROPIC_MODEL: "claude-pinned" });
     expect(getProviderChain().find((p) => p.name === "sonnet")?.model).toBe("claude-pinned");
+  });
+
+  it("puts Gemini Flash then Argon first when GEMINI_API_KEY is set", () => {
+    stubEnv({ ...FULL_ENV, GEMINI_API_KEY: "gem" });
+    const chain = getProviderChain();
+    expect(chain.map((p) => [p.name, p.model])).toEqual([
+      ["gemini", DEFAULT_GEMINI_MODEL],
+      ["argon", DEFAULT_GEMINI_ARGON_MODEL],
+      ["grok", "grok-x"],
+      ["sonnet", "claude-sonnet-x"],
+      ["opus", "claude-opus-x"],
+      ["qwen", DEFAULT_QWEN_MODEL],
+    ]);
+    expect(chain[0]).toMatchObject({ baseURL: DEFAULT_GEMINI_BASE_URL, apiKey: "gem" });
+    expect(chain[1]).toMatchObject({ baseURL: DEFAULT_GEMINI_BASE_URL, apiKey: "gem" });
+  });
+
+  it("lets GEMINI_MODEL / GEMINI_ARGON_MODEL override the Gemini models", () => {
+    stubEnv({ ...FULL_ENV, GEMINI_API_KEY: "gem", GEMINI_MODEL: "flash-x", GEMINI_ARGON_MODEL: "argon-x" });
+    expect(getProviderChain().slice(0, 2).map((p) => p.model)).toEqual(["flash-x", "argon-x"]);
   });
 });
 
@@ -228,6 +254,28 @@ describe("completeText", () => {
     stubEnv({ ...FULL_ENV, AI_PROVIDER_ORDER: "grok" });
     await completeText({ messages: [{ role: "user", content: "hi" }], reasoningEffort: "low" });
     expect(m.openaiCreate.mock.calls[1][1].reasoning_effort).toBe("low");
+  });
+
+  it("sends Gemini low reasoning effort by default and honours an explicit one", async () => {
+    stubEnv({ ...FULL_ENV, GEMINI_API_KEY: "gem", AI_PROVIDER_ORDER: "gemini" });
+    m.openaiCreate.mockResolvedValue(openaiText("ok"));
+    const res = await completeText({ messages: [{ role: "user", content: "hi" }] });
+    await completeText({ messages: [{ role: "user", content: "hi" }], reasoningEffort: "high" });
+    expect(res).toEqual({ text: "ok", provider: "gemini", model: DEFAULT_GEMINI_MODEL });
+    expect(m.openaiCreate.mock.calls.map((c) => [c[0], c[1].reasoning_effort])).toEqual([
+      [DEFAULT_GEMINI_BASE_URL, "low"],
+      [DEFAULT_GEMINI_BASE_URL, "high"],
+    ]);
+  });
+
+  it("falls back from Gemini Flash to Argon", async () => {
+    stubEnv({ ...FULL_ENV, GEMINI_API_KEY: "gem", AI_PROVIDER_ORDER: "gemini,argon" });
+    m.openaiCreate.mockImplementation(async (_baseURL: string, body: { model: string }) => {
+      if (body.model === DEFAULT_GEMINI_MODEL) throw new Error("429 quota");
+      return openaiText("from argon");
+    });
+    const res = await completeText({ messages: [{ role: "user", content: "hi" }] });
+    expect(res).toEqual({ text: "from argon", provider: "argon", model: DEFAULT_GEMINI_ARGON_MODEL });
   });
 });
 

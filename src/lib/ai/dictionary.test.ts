@@ -112,7 +112,7 @@ describe("lookupWord", () => {
     const second = await lookupWord({ word: "Hund", language: "de", context: "Der Hund bellt." });
     expect(second.cached).toBe(true);
     expect(mockedCallTool).toHaveBeenCalledTimes(1);
-    expect(mockedCallTool.mock.calls[0][0].prefer).toEqual(["qwen"]);
+    expect(mockedCallTool.mock.calls[0][0].prefer).toBeUndefined();
   });
 
   it("treats a different sentence as a separate lookup", async () => {

@@ -178,7 +178,6 @@ export async function lookupWord(input: {
     system: DICTIONARY_SYSTEM_PROMPT,
     messages: [{ role: "user", content: buildDictionaryPrompt(input) }],
     tool: DICTIONARY_TOOL,
-    prefer: ["qwen"],
     maxTokens: 1200,
     reasoningEffort: "low",
     timeoutMs: 20_000,
