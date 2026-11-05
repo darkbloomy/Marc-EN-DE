@@ -20,7 +20,8 @@ interface SessionSummaryProps {
   results: ExerciseResultSummary[];
   exercises?: GeneratedExercise[];
   sources?: Array<"ai" | "db" | "fallback" | undefined>;
-  onPracticeAgain: () => void;
+  /** Omit on a saved-session review so Practice Again is hidden. */
+  onPracticeAgain?: () => void;
   /** When provided, shows a "Save to pool" button (AI-built sessions). */
   onSaveToPool?: () => void;
   poolState?: "idle" | "saving" | "saved";
@@ -252,13 +253,15 @@ export function SessionSummary({
       </div>
 
       <div className="flex flex-col gap-3">
-        <button
-          onClick={onPracticeAgain}
-          className="flex items-center justify-center gap-2 w-full py-3 bg-blue-600 text-white font-semibold rounded-xl hover:bg-blue-700 transition-colors"
-        >
-          <RotateCcw size={20} />
-          Practice Again
-        </button>
+        {onPracticeAgain && (
+          <button
+            onClick={onPracticeAgain}
+            className="flex items-center justify-center gap-2 w-full py-3 bg-blue-600 text-white font-semibold rounded-xl hover:bg-blue-700 transition-colors"
+          >
+            <RotateCcw size={20} />
+            Practice Again
+          </button>
+        )}
         {onSaveToPool && (
           <button
             onClick={onSaveToPool}

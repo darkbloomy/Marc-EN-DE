@@ -40,11 +40,10 @@ export async function GET(
         where: { profileId: id, completedAt: { not: null } },
       }),
 
-      // Recent sessions (last 10)
+      // Completed sessions, newest first (no date cutoff)
       prisma.session.findMany({
         where: { profileId: id, completedAt: { not: null } },
         orderBy: { completedAt: "desc" },
-        take: 10,
         select: {
           id: true,
           language: true,

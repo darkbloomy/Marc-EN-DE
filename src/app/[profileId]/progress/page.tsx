@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import Link from "next/link";
 import { useProfile } from "@/contexts/ProfileContext";
 import {
   BarChart3,
@@ -225,12 +226,13 @@ export default function ProgressPage() {
       {/* Recent sessions */}
       {data.recentSessions.length > 0 && (
         <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-5">
-          <h2 className="font-semibold text-gray-800 mb-4">Recent Sessions</h2>
+          <h2 className="font-semibold text-gray-800 mb-4">Sessions</h2>
           <div className="space-y-3">
             {data.recentSessions.map((session) => (
-              <div
+              <Link
                 key={session.id}
-                className="flex items-center justify-between text-sm py-2 border-b border-gray-50 last:border-0"
+                href={`/${profile.id}/sessions/${session.id}`}
+                className="flex items-center justify-between text-sm py-2 border-b border-gray-50 last:border-0 hover:bg-gray-50 rounded-lg px-1 -mx-1"
               >
                 <div className="flex items-center gap-3">
                   <span>{session.language === "de" ? "🇩🇪" : "🇬🇧"}</span>
@@ -259,7 +261,7 @@ export default function ProgressPage() {
                     {session.exerciseCount} exercises
                   </div>
                 </div>
-              </div>
+              </Link>
             ))}
           </div>
         </div>

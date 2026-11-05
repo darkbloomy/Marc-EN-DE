@@ -159,9 +159,10 @@ export default function ProfileDashboard() {
         {progress && progress.recentSessions.length > 0 ? (
           <div className="space-y-2">
             {progress.recentSessions.slice(0, 3).map((session) => (
-              <div
+              <Link
                 key={session.id}
-                className="flex items-center justify-between text-sm py-2 border-b border-gray-50 last:border-0"
+                href={`/${profile.id}/sessions/${session.id}`}
+                className="flex items-center justify-between text-sm py-2 border-b border-gray-50 last:border-0 hover:bg-gray-50 rounded-lg px-1 -mx-1"
               >
                 <div className="flex items-center gap-3">
                   <span>
@@ -182,7 +183,7 @@ export default function ProfileDashboard() {
                 <span className="font-medium text-green-600">
                   +{session.totalPoints} pts
                 </span>
-              </div>
+              </Link>
             ))}
           </div>
         ) : (
